@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#123b5d"><link rel="manifest" href="manifest.json">
+<title>حسابات برج مكة</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;background:#f4f7fa;color:#183044}
+header{background:#123b5d;color:#fff;padding:20px 16px 18px;border-radius:0 0 22px 22px;position:sticky;top:0;z-index:5}
+h1{margin:0;font-size:24px}.sub{opacity:.8;font-size:13px;margin-top:4px}
+main{padding:14px;max-width:900px;margin:auto}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.card{background:#fff;border-radius:16px;padding:15px;box-shadow:0 2px 12px #173b5d12}.label{font-size:13px;color:#6a7b89}.value{font-size:22px;font-weight:800;margin-top:5px}
+.green{color:#16844a}.red{color:#c53d3d}.blue{color:#276a98}.dark{color:#183044}
+nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}.navbtn,button{border:0;border-radius:12px;padding:12px;font-weight:700;cursor:pointer}.navbtn{background:#fff;color:#23485f}.navbtn.active{background:#123b5d;color:#fff}
+section{display:none}.active-section{display:block}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #d8e1e8;border-radius:10px;background:#fff;font-size:16px}textarea{min-height:80px}
+.primary{background:#123b5d;color:#fff}.income{background:#e7f7ee;color:#16844a}.expense{background:#fff0f0;color:#c53d3d}.neutral{background:#e9f2f8;color:#276a98}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}th,td{padding:10px;border-bottom:1px solid #edf1f4;text-align:right;font-size:14px}th{background:#f5f8fa}
+.small{font-size:12px;color:#71818d}.actions button{padding:7px 9px;font-size:12px}
+.modal{position:fixed;inset:0;background:#0006;display:none;align-items:end;z-index:20}.modal.show{display:flex}.sheet{background:#fff;width:100%;padding:18px;border-radius:22px 22px 0 0;max-height:85vh;overflow:auto}
+h2{font-size:18px;margin:5px 0 14px}.notice{padding:12px;border-radius:12px;background:#fff8df;margin:10px 0;font-size:13px}
+@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}nav{grid-template-columns:repeat(6,1fr)}.modal{align-items:center;justify-content:center}.sheet{max-width:520px;border-radius:22px}}
+</style></head>
+<body>
+<header><h1>حسابات برج مكة</h1><div class="sub">إدارة حسابات اتحاد الشاغلين — البيانات محفوظة على هذا الجهاز</div></header>
+<main>
+<nav id="nav"></nav>
+
+<section id="dashboard" class="active-section">
+<div class="grid">
+<div class="card"><div class="label">الرصيد الافتتاحي</div><div id="opening" class="value blue">٠ ج.م</div></div>
+<div class="card"><div class="label">إيرادات الشهر</div><div id="incomeTotal" class="value green">٠ ج.م</div></div>
+<div class="card"><div class="label">مصروفات الشهر</div><div id="expenseTotal" class="value red">٠ ج.م</div></div>
+<div class="card"><div class="label">الرصيد النهائي</div><div id="closing" class="value dark">٠ ج.م</div></div>
+</div>
+<div class="card" style="margin-top:12px"><h2>تسجيل سريع</h2><div class="row">
+<button class="income" onclick="openTx('income')">＋ إضافة إيراد</button>
+<button class="expense" onclick="openTx('expense')">＋ إضافة مصروف</button>
+<button class="neutral" onclick="openTx('opening')">تعديل رصيد الشهر</button>
+</div></div>
+</section>
+
+<section id="transactions"><div class="card"><h2>العمليات</h2><div class="row">
+<select id="filterMonth" onchange="renderTransactions()"></select>
+<select id="filterType" onchange="renderTransactions()"><option value="">كل العمليات</option><option value="income">الإيرادات</option><option value="expense">المصروفات</option></select>
+</div><div style="overflow:auto;margin-top:10px"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>النوع</th><th>المبلغ</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div></div></section>
+
+<section id="residents"><div class="card"><h2>السكان والاشتراكات</h2><button class="primary" onclick="openResident()">＋ إضافة ساكن/وحدة</button><div style="overflow:auto;margin-top:10px"><table><thead><tr><th>الوحدة</th><th>الاسم</th><th>الاشتراك</th><th>المتأخرات</th><th></th></tr></thead><tbody id="resBody"></tbody></table></div></div></section>
+
+<section id="gate"><div class="card"><h2>حساب البواب</h2><div class="grid">
+<div><div class="label">المرتب الشهري</div><div id="salary" class="value">٠ ج.م</div></div>
+<div><div class="label">إجمالي السلف</div><div id="advances" class="value red">٠ ج.م</div></div>
+<div><div class="label">المسدد من السلف</div><div id="repaid" class="value green">٠ ج.م</div></div>
+<div><div class="label">رصيد السلف</div><div id="advanceBalance" class="value blue">٠ ج.م</div></div>
+</div><div class="row" style="margin-top:12px"><button class="primary" onclick="openGate('salary')">إضافة مرتب/صرف</button><button class="expense" onclick="openGate('advance')">إضافة سلفة</button><button class="income" onclick="openGate('repay')">تسجيل سداد سلفة</button></div>
+<div style="overflow:auto;margin-top:12px"><table><thead><tr><th>التاريخ</th><th>العملية</th><th>المبلغ</th><th></th></tr></thead><tbody id="gateBody"></tbody></table></div></div></section>
+
+<section id="reports"><div class="card"><h2>التقرير الشهري</h2><div class="row"><select id="reportMonth" onchange="renderReport()"></select><button class="primary" onclick="window.print()">طباعة / حفظ PDF</button></div><div id="report" style="margin-top:14px"></div></div></section>
+
+<section id="settings"><div class="card"><h2>الإعدادات والبيانات</h2><div class="notice">يمكن إضافة أو تعديل مسميات الإيرادات والمصروفات من داخل شاشة العملية نفسها. حذف المسمى لا يحذف العمليات التاريخية.</div>
+<div class="row"><button class="neutral" onclick="exportData()">تصدير نسخة احتياطية</button><button class="expense" onclick="resetData()">مسح كل البيانات</button></div></div></section>
+</main>
+
+<div id="modal" class="modal" onclick="if(event.target===this)closeModal()"><div class="sheet" id="sheet"></div></div>
+<script>
+const KEY='hasabat_borg_makka_v1';
+const months=()=>{let a=[],d=new Date();for(let i=0;i<24;i++){let x=new Date(d.getFullYear(),d.getMonth()-i,1);a.push(x.toISOString().slice(0,7))}return a};
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{opening:{},tx:[],residents:[],gate:{salary:0,ops:[]},categories:{income:['اشتراك شهري','متأخرات','إيراد خدمات','إيراد آخر'],expense:['كهرباء','مياه','نظافة','صيانة','مصروف طارئ','مصروف آخر']}};
+const save=()=>localStorage.setItem(KEY,JSON.stringify(db));
+const ar=n=>Number(n||0).toLocaleString('ar-EG');
+const money=n=>ar(n)+' ج.م';
+const today=()=>new Date().toISOString().slice(0,10);
+let currentMonth=today().slice(0,7);
+function setup(){document.getElementById('nav').innerHTML=[['dashboard','الرئيسية'],['transactions','العمليات'],['residents','السكان'],['gate','البواب'],['reports','التقارير'],['settings','الإعدادات']].map(x=>`<button class="navbtn" onclick="show('${x[0]}',this)">${x[1]}</button>`).join(''); fillMonths(); renderAll();}
+function show(id,el){document.querySelectorAll('section').forEach(s=>s.classList.remove('active-section'));document.getElementById(id).classList.add('active-section');document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderAll()}
+function fillMonths(){['filterMonth','reportMonth'].forEach(id=>document.getElementById(id).innerHTML=months().map(m=>`<option value="${m}" ${m===currentMonth?'selected':''}>${m}</option>`).join(''))}
+function totals(m=currentMonth){let inc=db.tx.filter(x=>x.month===m&&x.type==='income').reduce((s,x)=>s+x.amount,0),exp=db.tx.filter(x=>x.month===m&&x.type==='expense').reduce((s,x)=>s+x.amount,0);return {inc,exp,open:Number(db.opening[m]||0),close:Number(db.opening[m]||0)+inc-exp}}
+function renderDash(){let t=totals();opening.textContent=money(t.open);incomeTotal.textContent=money(t.inc);expenseTotal.textContent=money(t.exp);closing.textContent=money(t.close)}
+function renderTransactions(){let m=filterMonth.value||currentMonth, f=filterType.value;txBody.innerHTML=db.tx.filter(x=>x.month===m&&(!f||x.type===f)).sort((a,b)=>b.date.localeCompare(a.date)).map((x,i)=>`<tr><td>${x.date}</td><td>${x.label}${x.unit?' — شقة '+x.unit:''}</td><td class="${x.type==='income'?'green':'red'}">${x.type==='income'?'إيراد':'مصروف'}</td><td class="${x.type==='income'?'green':'red'}">${money(x.amount)}</td><td class="actions"><button onclick="editTx('${x.id}')">تعديل</button><button onclick="delTx('${x.id}')">حذف</button></td></tr>`).join('')||'<tr><td colspan="5">لا توجد عمليات</td></tr>'}
+function renderResidents(){resBody.innerHTML=db.residents.map(r=>{let paid=db.tx.filter(x=>x.type==='income'&&x.unit===r.unit&&x.month===currentMonth).reduce((s,x)=>s+x.amount,0);return `<tr><td>${r.unit}</td><td>${r.name}</td><td>${money(r.fee)}</td><td>${money(Math.max(0,r.fee-paid))}</td><td><button onclick="payResident('${r.id}')">تحصيل</button><button onclick="editResident('${r.id}')">تعديل</button></td></tr>`}).join('')||'<tr><td colspan="5">لا توجد وحدات</td></tr>'}
+function renderGate(){let a=db.gate.ops.filter(x=>x.kind==='advance').reduce((s,x)=>s+x.amount,0),r=db.gate.ops.filter(x=>x.kind==='repay').reduce((s,x)=>s+x.amount,0);salary.textContent=money(db.gate.salary);advances.textContent=money(a);repaid.textContent=money(r);advanceBalance.textContent=money(a-r);gateBody.innerHTML=db.gate.ops.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<tr><td>${x.date}</td><td>${x.kind==='advance'?'سلفة':x.kind==='repay'?'سداد سلفة':'صرف مرتب'}</td><td>${money(x.amount)}</td><td><button onclick="delGate('${x.id}')">حذف</button></td></tr>`).join('')||'<tr><td colspan="4">لا توجد عمليات</td></tr>'}
+function renderReport(){let m=reportMonth.value,t=totals(m), inc=db.tx.filter(x=>x.month===m&&x.type==='income'),exp=db.tx.filter(x=>x.month===m&&x.type==='expense');report.innerHTML=`<div class="card" style="box-shadow:none;border:1px solid #e6edf2"><h2>حسابات برج مكة — ${m}</h2><div class="grid"><div><span class="label">الرصيد الافتتاحي</span><div class="value blue">${money(t.open)}</div></div><div><span class="label">الإيرادات</span><div class="value green">${money(t.inc)}</div></div><div><span class="label">المصروفات</span><div class="value red">${money(t.exp)}</div></div><div><span class="label">الرصيد النهائي</span><div class="value dark">${money(t.close)}</div></div></div><hr><h2>تفاصيل الإيرادات</h2>${listReport(inc,'green')}<h2>تفاصيل المصروفات</h2>${listReport(exp,'red')}</div>`}
+function listReport(a,c){return a.length?`<table><tbody>${a.map(x=>`<tr><td>${x.date}</td><td>${x.label}${x.unit?' — شقة '+x.unit:''}</td><td class="${c}">${money(x.amount)}</td></tr>`).join('')}</tbody></table>`:'<div class="small">لا توجد عمليات.</div>'}
+function renderAll(){renderDash();renderTransactions();renderResidents();renderGate();renderReport()}
+function openTx(type,id=null){let x=id?db.tx.find(z=>z.id===id):null, cats=db.categories[type==='income'?'income':'expense']; if(type==='opening'){let m=currentMonth;sheet.innerHTML=`<h2>الرصيد الافتتاحي — ${m}</h2><input id="amt" type="number" value="${db.opening[m]||0}" placeholder="المبلغ"><div class="row" style="margin-top:10px"><button class="primary" onclick="db.opening['${m}']=Number(amt.value||0);save();closeModal();renderAll()">حفظ</button><button onclick="closeModal()">إلغاء</button></div>`;return openModal()}
+sheet.innerHTML=`<h2>${x?'تعديل':'إضافة'} ${type==='income'?'إيراد':'مصروف'}</h2><label>التاريخ</label><input id="date" type="date" value="${x?.date||today()}"><label>المسمى</label><div class="row"><select id="cat">${cats.map(c=>`<option>${c}</option>`).join('')}</select><button onclick="addCat('${type}')">＋ إضافة</button></div><label>المبلغ</label><input id="amt" type="number" min="0" value="${x?.amount||''}"><label>البيان</label><input id="note" value="${x?.note||''}" placeholder="بيان اختياري"><div class="row" style="margin-top:10px"><button class="primary" onclick="saveTx('${type}','${id||''}')">حفظ</button><button onclick="closeModal()">إلغاء</button></div>`;
+openModal(); if(x)cat.value=x.label;
+}
+function addCat(type){let name=prompt('اكتب اسم المسمى الجديد:');if(!name)return;let k=type==='income'?'income':'expense';if(!db.categories[k].includes(name))db.categories[k].push(name);save();openTx(type)}
+function saveTx(type,id){let amount=Number(amt.value||0);if(!amount)return alert('أدخل المبلغ');let d=date.value,m=d.slice(0,7),o={id:id||crypto.randomUUID(),date:d,month:m,type,label:cat.value,amount,note:note.value};if(id)db.tx=db.tx.map(x=>x.id===id?o:x);else db.tx.push(o);save();closeModal();renderAll()}
+function editTx(id){let x=db.tx.find(z=>z.id===id);openTx(x.type,id)}
+function delTx(id){if(confirm('حذف العملية؟')){db.tx=db.tx.filter(x=>x.id!==id);save();renderAll()}}
+function openResident(id=null){let r=id?db.residents.find(x=>x.id===id):null;sheet.innerHTML=`<h2>${r?'تعديل':'إضافة'} وحدة</h2><input id="unit" value="${r?.unit||''}" placeholder="رقم الشقة"><input id="name" value="${r?.name||''}" placeholder="اسم المالك/الشاغل"><input id="fee" type="number" value="${r?.fee||''}" placeholder="الاشتراك الشهري"><div class="row"><button class="primary" onclick="saveResident('${id||''}')">حفظ</button><button onclick="closeModal()">إلغاء</button></div>`;openModal()}
+function saveResident(id){let o={id:id||crypto.randomUUID(),unit:unit.value,name:name.value,fee:Number(fee.value||0)};if(id)db.residents=db.residents.map(x=>x.id===id?o:x);else db.residents.push(o);save();closeModal();renderAll()}
+function editResident(id){openResident(id)}
+function payResident(id){let r=db.residents.find(x=>x.id===id);sheet.innerHTML=`<h2>تحصيل من شقة ${r.unit}</h2><div class="notice">المطلوب هذا الشهر: ${money(r.fee)}</div><input id="amt" type="number" value="${r.fee}" placeholder="المبلغ المدفوع"><input id="date" type="date" value="${today()}"><div class="row"><button class="primary" onclick="saveResidentPayment('${id}')">تسجيل التحصيل</button><button onclick="closeModal()">إلغاء</button></div>`;openModal()}
+function saveResidentPayment(id){let r=db.residents.find(x=>x.id===id),d=date.value;db.tx.push({id:crypto.randomUUID(),date:d,month:d.slice(0,7),type:'income',label:'اشتراك شهري',unit:r.unit,amount:Number(amt.value||0),note:'تحصيل من ساكن'});save();closeModal();renderAll()}
+function openGate(kind){sheet.innerHTML=`<h2>${kind==='salary'?'صرف مرتب':kind==='advance'?'إضافة سلفة':'سداد سلفة'}</h2>${kind==='salary'?'<input id="salaryAmt" type="number" placeholder="المبلغ المصروف">':''}<input id="amt" type="number" placeholder="المبلغ"><input id="date" type="date" value="${today()}"><div class="row"><button class="primary" onclick="saveGate('${kind}')">حفظ</button><button onclick="closeModal()">إلغاء</button></div>`;openModal()}
+function saveGate(kind){let amount=Number((kind==='salary'?salaryAmt:amt).value||0);if(!amount)return alert('أدخل المبلغ');let d=date.value;if(kind==='salary'){db.gate.salary=amount;db.gate.ops.push({id:crypto.randomUUID(),date:d,kind,amount});db.tx.push({id:crypto.randomUUID(),date:d,month:d.slice(0,7),type:'expense',label:'مرتب البواب',amount,note:'صرف مرتب'})}else{db.gate.ops.push({id:crypto.randomUUID(),date:d,kind,amount});if(kind==='advance')db.tx.push({id:crypto.randomUUID(),date:d,month:d.slice(0,7),type:'expense',label:'سلفة البواب',amount,note:'سلفة للبواب'})}save();closeModal();renderAll()}
+function delGate(id){db.gate.ops=db.gate.ops.filter(x=>x.id!==id);save();renderAll()}
+function openModal(){modal.classList.add('show')}function closeModal(){modal.classList.remove('show')}
+function exportData(){let b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='حسابات-برج-مكة-نسخة-احتياطية.json';a.click()}
+function resetData(){if(confirm('سيتم حذف كل البيانات من هذا الجهاز. هل أنت متأكد؟')){localStorage.removeItem(KEY);location.reload()}}
+setup();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script></body></html>
