@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#123b5d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<title>حسابات برج مكة</title>
+<style>
+*{box-sizing:border-box}
+:root{--navy:#123b5d;--green:#16844a;--red:#c53d3d;--blue:#276a98;--gold:#a27618;--bg:#f4f7fa;--line:#e5edf2}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:#183044}
+header{background:var(--navy);color:#fff;padding:22px 16px 20px;border-radius:0 0 24px 24px;position:sticky;top:0;z-index:5;box-shadow:0 4px 18px #173b5d20}
+h1{margin:0;font-size:25px}.sub{opacity:.82;font-size:13px;margin-top:5px}
+main{padding:14px;max-width:1000px;margin:auto}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.navbtn,button{border:0;border-radius:13px;padding:12px;font-weight:800;cursor:pointer;font-size:14px}
+.navbtn{background:#fff;color:#23485f}.navbtn.active{background:var(--navy);color:#fff}
+section{display:none}.active-section{display:block}
+.card{background:#fff;border-radius:18px;padding:16px;box-shadow:0 2px 12px #173b5d12;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.label{font-size:13px;color:#6a7b89}.value{font-size:22px;font-weight:900;margin-top:5px}
+.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.gold{color:var(--gold)}.dark{color:#183044}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #d8e1e8;border-radius:11px;background:#fff;font-size:16px;font-family:inherit}
+textarea{min-height:80px}
+label{display:block;font-size:13px;color:#60717d;margin:9px 0 5px}
+.primary{background:var(--navy);color:#fff}.income{background:#e7f7ee;color:var(--green)}.expense{background:#fff0f0;color:var(--red)}.neutral{background:#e9f2f8;color:var(--blue)}.goldbtn{background:#fff7df;color:#8a6414}
+.notice{padding:12px;border-radius:12px;background:#fff8df;margin:10px 0;font-size:13px;line-height:1.6}
+.ok{padding:10px;border-radius:10px;background:#e9f8ef;color:#176d3e;font-size:13px}
+.danger{padding:10px;border-radius:10px;background:#fff0f0;color:#9f2f2f;font-size:13px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;min-width:620px}
+th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;font-size:14px;vertical-align:top}th{background:#f5f8fa}
+.small{font-size:12px;color:#71818d}.muted{color:#71818d}
+.actions{white-space:nowrap}.actions button{padding:7px 9px;font-size:12px;margin-left:4px}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:end;z-index:20}.modal.show{display:flex}
+.sheet{background:#fff;width:100%;padding:18px;border-radius:22px 22px 0 0;max-height:88vh;overflow:auto}
+.sheet h2{font-size:19px;margin:4px 0 14px}
+.month-title{font-weight:900;font-size:18px}
+.kpi{padding:13px;border:1px solid var(--line);border-radius:14px;background:#fbfdfe}
+.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#edf3f7;font-size:12px}
+.report-head{border:1px solid var(--line);border-radius:16px;padding:15px}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+@media(min-width:700px){nav{grid-template-columns:repeat(6,1fr)}.grid{grid-template-columns:repeat(4,1fr)}.modal{align-items:center;justify-content:center}.sheet{max-width:560px;border-radius:22px}}
+@media print{
+header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}main{max-width:none;padding:0}.print-table{min-width:0}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>حسابات برج مكة</h1>
+<div class="sub">إدارة حسابات اتحاد الشاغلين — البيانات محفوظة على هذا الجهاز</div>
+</header>
+<main>
+<nav id="nav"></nav>
+
+<section id="dashboard" class="active-section">
+<div class="grid">
+<div class="card"><div class="label">الرصيد الافتتاحي</div><div id="openingValue" class="value blue">٠ ج.م</div></div>
+<div class="card"><div class="label">إيرادات الشهر</div><div id="incomeTotal" class="value green">٠ ج.م</div></div>
+<div class="card"><div class="label">مصروفات الشهر</div><div id="expenseTotal" class="value red">٠ ج.م</div></div>
+<div class="card"><div class="label">الرصيد النهائي</div><div id="closingValue" class="value dark">٠ ج.م</div></div>
+</div>
+<div class="card">
+<div class="row">
+<div><label>الشهر</label><select id="dashMonth"></select></div>
+<div style="display:flex;align-items:end"><button class="neutral" id="dashRefresh">تحديث</button></div>
+</div>
+<div id="cashExtra" class="notice"></div>
+<div class="row no-print">
+<button class="income" id="quickIncome">＋ إضافة إيراد</button>
+<button class="expense" id="quickExpense">＋ إضافة مصروف</button>
+<button class="neutral" id="quickOpening">تعديل/تحديد رصيد البداية</button>
+</div>
+</div>
+</section>
+
+<section id="transactions">
+<div class="card">
+<h2>العمليات</h2>
+<div class="row">
+<div><label>الشهر</label><select id="filterMonth"></select></div>
+<div><label>النوع</label><select id="filterType"><option value="">كل العمليات</option><option value="income">الإيرادات</option><option value="expense">المصروفات</option><option value="cash">حركات نقدية غير تشغيلية</option></select></div>
+</div>
+<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>النوع</th><th>المبلغ</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>
+</div>
+</section>
+
+<section id="residents">
+<div class="card">
+<h2>السكان والاشتراكات</h2>
+<button class="primary no-print" id="addResident">＋ إضافة ساكن/وحدة</button>
+<div class="row" style="margin-top:10px"><div><label>شهر المتابعة</label><select id="residentMonth"></select></div></div>
+<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>الوحدة</th><th>الاسم</th><th>الاشتراك</th><th>المطلوب</th><th>المحصل</th><th>المتبقي</th><th></th></tr></thead><tbody id="resBody"></tbody></table></div>
+</div>
+</section>
+
+<section id="gate">
+<div class="card">
+<h2>حساب البواب</h2>
+<div class="grid">
+<div class="kpi"><div class="label">المرتب المحدد</div><div id="salaryValue" class="value">٠ ج.م</div></div>
+<div class="kpi"><div class="label">إجمالي السلف</div><div id="advanceValue" class="value red">٠ ج.م</div></div>
+<div class="kpi"><div class="label">المسدد من السلف</div><div id="repaidValue" class="value green">٠ ج.م</div></div>
+<div class="kpi"><div class="label">رصيد السلف المستحق</div><div id="advanceBalance" class="value blue">٠ ج.م</div></div>
+</div>
+<div class="notice">المرتب والمصروفات تُسجل كمصروف. السلفة تُسجل كحق مستحق على البواب وليست مصروفًا، والسداد يعيد النقدية دون اعتباره إيرادًا تشغيليًا.</div>
+<div class="row no-print">
+<button class="primary" id="gateSalary">＋ صرف مرتب</button>
+<button class="expense" id="gateAdvance">＋ صرف سلفة</button>
+<button class="income" id="gateRepay">＋ سداد سلفة</button>
+</div>
+<div style="overflow:auto;margin-top:12px"><table><thead><tr><th>التاريخ</th><th>العملية</th><th>المبلغ</th><th></th></tr></thead><tbody id="gateBody"></tbody></table></div>
+</div>
+</section>
+
+<section id="reports">
+<div class="card">
+<div class="row no-print"><div><label>الشهر</label><select id="reportMonth"></select></div><div style="display:flex;align-items:end"><button class="primary" id="printReport">طباعة / PDF</button></div></div>
+<div id="report" style="margin-top:12px"></div>
+</div>
+</section>
+
+<section id="settings">
+<div class="card">
+<h2>الإعدادات والبيانات</h2>
+<div class="notice">هذه النسخة تستخدم ترحيلًا آمنًا للبيانات القديمة. تغيير اسم فئة لا يغيّر وصف العمليات السابقة. كما يمكن تصدير نسخة احتياطية واستيرادها.</div>
+<div class="row no-print">
+<button class="neutral" id="exportBtn">تصدير نسخة احتياطية</button>
+<button class="primary" id="importBtn">استيراد نسخة احتياطية</button>
+<button class="expense" id="resetBtn">مسح كل البيانات</button>
+</div>
+<input id="importFile" type="file" accept=".json,application/json" style="display:none">
+<hr>
+<h2>مسميات الإيرادات والمصروفات</h2>
+<div class="row">
+<div><label>الإيرادات</label><div id="incomeCats"></div></div>
+<div><label>المصروفات</label><div id="expenseCats"></div></div>
+</div>
+<div class="small">إعادة تسمية الفئة تؤثر على القائمة الجديدة فقط، ولا تغيّر العمليات التاريخية.</div>
+</div>
+</section>
+</main>
+
+<div id="modal" class="modal">
+<div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const KEY='hasabat_borg_makka_v1';
+const VERSION=3;
+const $=id=>document.getElementById(id);
+const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)}};
+const today=()=>new Date().toISOString().slice(0,10);
+const currentMonth=()=>today().slice(0,7);
+const ar=n=>Number(n||0).toLocaleString('ar-EG');
+const money=n=>ar(n)+' ج.م';
+
+const defaultCats={
+ income:['اشتراك شهري','متأخرات','إيراد خدمات','إيراد آخر'],
+ expense:['كهرباء','مياه','نظافة','صيانة','مصروف طارئ','مصروف آخر']
+};
+
+function blankDB(){
+ return {schemaVersion:VERSION,opening:{},tx:[],residents:[],gate:{salary:0,ops:[]},categories:JSON.parse(JSON.stringify(defaultCats))};
+}
+
+function migrate(raw){
+ let d=raw&&typeof raw==='object'?raw:blankDB();
+ if(!d.opening)d.opening={};
+ if(!Array.isArray(d.tx))d.tx=[];
+ if(!Array.isArray(d.residents))d.residents=[];
+ if(!d.gate||typeof d.gate!=='object')d.gate={salary:0,ops:[]};
+ if(!Array.isArray(d.gate.ops))d.gate.ops=[];
+ if(!d.categories||typeof d.categories!=='object')d.categories={};
+ d.categories.income=Array.isArray(d.categories.income)?d.categories.income:defaultCats.income.slice();
+ d.categories.expense=Array.isArray(d.categories.expense)?d.categories.expense:defaultCats.expense.slice();
+
+ d.tx=d.tx.map(x=>({
+   id:x.id||uid(),date:x.date||today(),month:x.month||(x.date||today()).slice(0,7),
+   type:x.type==='income'?'income':'expense',label:String(x.label||'عملية'),amount:Number(x.amount||0),
+   note:String(x.note||''),unit:x.unit!=null?String(x.unit):''
+ }));
+ d.residents=d.residents.map(r=>({
+   id:r.id||uid(),unit:String(r.unit||''),name:String(r.name||''),
+   fee:Number(r.fee||0),active:r.active!==false,
+   feeHistory:Array.isArray(r.feeHistory)?r.feeHistory.map(h=>({month:String(h.month),fee:Number(h.fee||0)})):[],
+ }));
+ d.gate.ops=d.gate.ops.map(x=>({
+   id:x.id||uid(),date:x.date||today(),kind:['advance','repay','salary'].includes(x.kind)?x.kind:'salary',
+   amount:Number(x.amount||0),note:String(x.note||'')
+ }));
+ d.gate.salary=Number(d.gate.salary||0);
+ d.schemaVersion=VERSION;
+ return d;
+}
+
+let db;
+try{db=migrate(JSON.parse(localStorage.getItem(KEY)||'null'))}catch(e){db=blankDB()}
+
+function save(){db.schemaVersion=VERSION;localStorage.setItem(KEY,JSON.stringify(db))}
+function fmtMonth(m){
+ const [y,mo]=m.split('-').map(Number);
+ const names=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+ return names[(mo||1)-1]+' '+ar(y);
+}
+function months(count=36){
+ const out=[],d=new Date();
+ for(let i=0;i<count;i++){
+   const x=new Date(d.getFullYear(),d.getMonth()-i,1);
+   out.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'));
+ }
+ return out;
+}
+function fillSelect(id,selected){
+ const el=$(id); if(!el)return;
+ const ms=months();
+ el.innerHTML=ms.map(m=>'<option value="'+m+'"'+(m===selected?' selected':'')+'>'+fmtMonth(m)+'</option>').join('');
+}
+function setSelects(m=currentMonth()){
+ ['dashMonth','filterMonth','residentMonth','reportMonth'].forEach(id=>fillSelect(id,m));
+}
+function openingFor(m){
+ if(Object.prototype.hasOwnProperty.call(db.opening,m))return Number(db.opening[m]||0);
+ const ms=months(60).slice().reverse();
+ const idx=ms.indexOf(m);
+ if(idx<0)return 0;
+ let start=0;
+ for(let i=idx-1;i>=0;i--){
+   if(Object.prototype.hasOwnProperty.call(db.opening,ms[i])){
+     start=i;
+     break;
+   }
+ }
+ let balance=Number(db.opening[ms[start]]||0);
+ for(let i=start+1;i<=idx;i++){
+   const mm=ms[i-1];
+   balance += operatingIncome(mm)-operatingExpense(mm)-advanceOut(mm)+repayIn(mm);
+ }
+ return balance;
+}
+function operatingIncome(m){return db.tx.filter(x=>x.month===m&&x.type==='income').reduce((s,x)=>s+Number(x.amount||0),0)}
+function operatingExpense(m){return db.tx.filter(x=>x.month===m&&x.type==='expense').reduce((s,x)=>s+Number(x.amount||0),0)}
+function advanceOut(m){return db.gate.ops.filter(x=>x.date.slice(0,7)===m&&x.kind==='advance').reduce((s,x)=>s+Number(x.amount||0),0)}
+function repayIn(m){return db.gate.ops.filter(x=>x.date.slice(0,7)===m&&x.kind==='repay').reduce((s,x)=>s+Number(x.amount||0),0)}
+function cashNonOperating(m){return repayIn(m)-advanceOut(m)}
+function totals(m){
+ const inc=operatingIncome(m),exp=operatingExpense(m),adv=advanceOut(m),rep=repayIn(m),open=openingFor(m);
+ return {inc,exp,adv,rep,open,close:open+inc-exp-adv+rep};
+}
+function residentFee(r,m){
+ let fee=Number(r.fee||0);
+ if(Array.isArray(r.feeHistory)){
+   const hist=r.feeHistory.filter(h=>h.month<=m).sort((a,b)=>a.month.localeCompare(b.month));
+   if(hist.length)fee=Number(hist[hist.length-1].fee||0);
+ }
+ return fee;
+}
+function paidFor(r,m){
+ return db.tx.filter(x=>x.type==='income'&&x.unit===r.unit&&x.month===m).reduce((s,x)=>s+Number(x.amount||0),0);
+}
+function nav(){
+ const items=[['dashboard','الرئيسية'],['transactions','العمليات'],['residents','السكان'],['gate','البواب'],['reports','التقارير'],['settings','الإعدادات']];
+ $('nav').innerHTML=items.map(([id,t])=>'<button class="navbtn" data-section="'+id+'">'+t+'</button>').join('');
+ document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>show(b.dataset.section,b)));
+ $('nav').querySelector('[data-section="dashboard"]').classList.add('active');
+}
+function show(id,btn){
+ document.querySelectorAll('section').forEach(s=>s.classList.remove('active-section'));
+ $(id).classList.add('active-section');
+ document.querySelectorAll('.navbtn').forEach(b=>b.classList.remove('active'));
+ if(btn)btn.classList.add('active');
+ renderAll();
+}
+function renderDashboard(){
+ const m=$('dashMonth').value||currentMonth(),t=totals(m);
+ $('openingValue').textContent=money(t.open);
+ $('incomeTotal').textContent=money(t.inc);
+ $('expenseTotal').textContent=money(t.exp);
+ $('closingValue').textContent=money(t.close);
+ $('cashExtra').innerHTML='حركة السلف في '+fmtMonth(m)+': صرف سلف <b>'+money(t.adv)+'</b> — سداد سلف <b>'+money(t.rep)+'</b>. هذه الحركات تؤثر على النقدية ولا تدخل ضمن الإيرادات والمصروفات التشغيلية.';
+}
+function renderTransactions(){
+ const m=$('filterMonth').value||currentMonth(),f=$('filterType').value;
+ const arr=db.tx.filter(x=>x.month===m&&(!f||x.type===f));
+ $('txBody').innerHTML=arr.sort((a,b)=>b.date.localeCompare(a.date)).map(x=>
+ '<tr><td>'+x.date+'</td><td>'+escapeHtml(x.label)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+(x.note?'<div class="small">'+escapeHtml(x.note)+'</div>':'')+'</td>'+
+ '<td class="'+(x.type==='income'?'green':'red')+'">'+(x.type==='income'?'إيراد':'مصروف')+'</td>'+
+ '<td class="'+(x.type==='income'?'green':'red')+'">'+money(x.amount)+'</td>'+
+ '<td class="actions"><button class="neutral edit-tx" data-id="'+x.id+'">تعديل</button><button class="expense del-tx" data-id="'+x.id+'">حذف</button></td></tr>'
+ ).join('')||'<tr><td colspan="5">لا توجد عمليات في هذا الشهر.</td></tr>';
+ document.querySelectorAll('.edit-tx').forEach(b=>b.onclick=()=>openTx(db.tx.find(x=>x.id===b.dataset.id)?.type,b.dataset.id));
+ document.querySelectorAll('.del-tx').forEach(b=>b.onclick=()=>deleteTx(b.dataset.id));
+}
+function renderResidents(){
+ const m=$('residentMonth').value||currentMonth();
+ $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
+   const fee=residentFee(r,m),paid=paidFor(r,m),remain=Math.max(0,fee-paid);
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'—')+'</td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td class="green">'+money(paid)+'</td><td class="'+(remain?'red':'green')+'">'+money(remain)+'</td>'+
+   '<td class="actions"><button class="income pay-res" data-id="'+r.id+'">تحصيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></td></tr>';
+ }).join('')||'<tr><td colspan="7">لا توجد وحدات نشطة.</td></tr>';
+ document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
+ document.querySelectorAll('.edit-res').forEach(b=>b.onclick=()=>openResident(b.dataset.id));
+}
+function renderGate(){
+ const a=db.gate.ops.filter(x=>x.kind==='advance').reduce((s,x)=>s+x.amount,0);
+ const r=db.gate.ops.filter(x=>x.kind==='repay').reduce((s,x)=>s+x.amount,0);
+ $('salaryValue').textContent=money(db.gate.salary);
+ $('advanceValue').textContent=money(a);
+ $('repaidValue').textContent=money(r);
+ $('advanceBalance').textContent=money(Math.max(0,a-r));
+ $('gateBody').innerHTML=db.gate.ops.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>
+ '<tr><td>'+x.date+'</td><td>'+({advance:'سلفة',repay:'سداد سلفة',salary:'صرف مرتب'}[x.kind]||'عملية')+'</td><td>'+money(x.amount)+'</td><td><button class="expense del-gate" data-id="'+x.id+'">حذف</button></td></tr>'
+ ).join('')||'<tr><td colspan="4">لا توجد عمليات.</td></tr>';
+ document.querySelectorAll('.del-gate').forEach(b=>b.onclick=()=>deleteGate(b.dataset.id));
+}
+function renderReport(){
+ const m=$('reportMonth').value||currentMonth(),t=totals(m);
+ const inc=db.tx.filter(x=>x.month===m&&x.type==='income');
+ const exp=db.tx.filter(x=>x.month===m&&x.type==='expense');
+ $('report').innerHTML='<div class="report-head"><h2 style="margin-top:0">حسابات برج مكة</h2><div class="month-title">'+fmtMonth(m)+'</div>'+
+ '<div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">الرصيد الافتتاحي</div><div class="value blue">'+money(t.open)+'</div></div>'+
+ '<div class="kpi"><div class="label">الإيرادات</div><div class="value green">'+money(t.inc)+'</div></div>'+
+ '<div class="kpi"><div class="label">المصروفات</div><div class="value red">'+money(t.exp)+'</div></div>'+
+ '<div class="kpi"><div class="label">الرصيد النهائي</div><div class="value dark">'+money(t.close)+'</div></div></div>'+
+ '<hr><h3>الإيرادات</h3>'+reportTable(inc,'green')+
+ '<h3>المصروفات</h3>'+reportTable(exp,'red')+
+ '<h3>حركة السلف</h3><table class="print-table"><tbody><tr><td>سلف مصروفة</td><td class="red">'+money(t.adv)+'</td></tr><tr><td>سداد سلف</td><td class="green">'+money(t.rep)+'</td></tr></tbody></table>'+
+ '</div>';
+}
+function reportTable(arr,c){
+ return arr.length?'<table class="print-table"><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>'+
+ arr.map(x=>'<tr><td>'+x.date+'</td><td>'+escapeHtml(x.label)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+'</td><td class="'+c+'">'+money(x.amount)+'</td></tr>').join('')+'</tbody></table>':'<div class="small">لا توجد عمليات.</div>';
+}
+function renderCats(){
+ ['income','expense'].forEach(k=>{
+   const id=k==='income'?'incomeCats':'expenseCats';
+   $(id).innerHTML=db.categories[k].map((c,i)=>'<div class="row" style="margin-bottom:6px"><input value="'+escapeAttr(c)+'" data-cat="'+k+'" data-index="'+i+'"><button class="neutral rename-cat" data-cat="'+k+'" data-index="'+i+'">حفظ الاسم</button></div>').join('');
+ });
+ document.querySelectorAll('.rename-cat').forEach(b=>b.onclick=()=>{
+   const input=document.querySelector('input[data-cat="'+b.dataset.cat+'"][data-index="'+b.dataset.index+'"]');
+   const v=(input.value||'').trim();
+   if(!v)return alert('اكتب اسمًا صحيحًا');
+   if(db.categories[b.dataset.cat].some((x,i)=>i!==Number(b.dataset.index)&&x===v))return alert('هذا الاسم موجود بالفعل');
+   db.categories[b.dataset.cat][Number(b.dataset.index)]=v;save();renderCats();
+ });
+}
+function renderAll(){renderDashboard();renderTransactions();renderResidents();renderGate();renderReport();renderCats()}
+function openModal(){ $('modal').classList.add('show') }
+function closeModal(){ $('modal').classList.remove('show'); $('sheet').innerHTML='' }
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
+
+function openTx(type,id){
+ const old=id?db.tx.find(x=>x.id===id):null;
+ if(type==='opening'){openOpening();return}
+ const k=type==='income'?'income':'expense';
+ const cats=db.categories[k];
+ $('sheet').innerHTML='<h2>'+(old?'تعديل ':'إضافة ')+(type==='income'?'إيراد':'مصروف')+'</h2>'+
+ '<label>التاريخ</label><input id="fDate" type="date" value="'+(old?old.date:today())+'">'+
+ '<label>المسمى</label><div class="row"><select id="fCat">'+cats.map(c=>'<option value="'+escapeAttr(c)+'">'+escapeHtml(c)+'</option>').join('')+'</select><button class="neutral" id="addCatBtn">＋ إضافة مسمى</button></div>'+
+ '<label>المبلغ</label><input id="fAmount" type="number" min="0" step="0.01" inputmode="decimal" value="'+(old?old.amount:'')+'">'+
+ '<label>البيان</label><input id="fNote" value="'+escapeAttr(old?.note||'')+'" placeholder="بيان اختياري">'+
+ '<div class="row" style="margin-top:12px"><button class="primary" id="saveTxBtn">حفظ</button><button class="neutral" id="cancelBtn">إلغاء</button></div>';
+ if(old)$('fCat').value=old.label;
+ $('addCatBtn').onclick=()=>{const name=prompt('اكتب اسم المسمى الجديد:');if(!name)return;const n=name.trim();if(!n)return; if(!db.categories[k].includes(n)){db.categories[k].push(n);save()} openTx(type,id)};
+ $('saveTxBtn').onclick=()=>saveTx(type,id);
+ $('cancelBtn').onclick=closeModal;
+ openModal();
+}
+function saveTx(type,id){
+ const amount=Number($('fAmount').value||0),date=$('fDate').value;
+ if(!date)return alert('اختر التاريخ');
+ if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
+ const o={id:id||uid(),date,month:date.slice(0,7),type,label:$('fCat').value,amount,note:$('fNote').value.trim(),unit:id?(db.tx.find(x=>x.id===id)?.unit||''):''};
+ if(id)db.tx=db.tx.map(x=>x.id===id?o:x);else db.tx.push(o);
+ save();closeModal();renderAll();
+}
+function openOpening(){
+ const m=$('dashMonth').value||currentMonth();
+ $('sheet').innerHTML='<h2>رصيد بداية '+fmtMonth(m)+'</h2><div class="notice">يمكنك تحديد رصيد افتتاحي مستقل لهذا الشهر. إذا تركت الشهر بلا قيمة، سيُرحّل رصيد الشهر السابق تلقائيًا.</div>'+
+ '<input id="openingAmt" type="number" step="0.01" value="'+(Object.prototype.hasOwnProperty.call(db.opening,m)?db.opening[m]:'')+'" placeholder="الرصيد الافتتاحي">'+
+ '<div class="row" style="margin-top:12px"><button class="primary" id="saveOpening">حفظ</button><button class="neutral" id="clearOpening">إلغاء التحديد</button></div>';
+ $('saveOpening').onclick=()=>{const v=$('openingAmt').value.trim();if(v==='')delete db.opening[m];else db.opening[m]=Number(v||0);save();closeModal();renderAll()};
+ $('clearOpening').onclick=()=>{delete db.opening[m];save();closeModal();renderAll()};
+ openModal();
+}
+function openResident(id){
+ const old=id?db.residents.find(x=>x.id===id):null;
+ const m=$('residentMonth').value||currentMonth();
+ const fee=old?residentFee(old,m):'';
+ $('sheet').innerHTML='<h2>'+(old?'تعديل بيانات الساكن':'إضافة ساكن/وحدة')+'</h2>'+
+ '<label>رقم الوحدة</label><input id="rUnit" value="'+escapeAttr(old?.unit||'')+'" inputmode="numeric" placeholder="مثال: ١ أو 101">'+
+ '<label>اسم المالك/الشاغل</label><input id="rName" value="'+escapeAttr(old?.name||'')+'" autocomplete="name" placeholder="اكتب الاسم بالعربية">'+
+ '<label>الاشتراك الشهري الحالي</label><input id="rFee" type="number" min="0" step="0.01" value="'+fee+'" inputmode="decimal">'+
+ '<div class="notice">إذا كان هناك تغيير في قيمة الاشتراك، سيتم تطبيق القيمة الجديدة من شهر المتابعة المحدد: '+fmtMonth(m)+' دون تغيير قيمة الشهور السابقة.</div>'+
+ '<div class="row"><button class="primary" id="saveResidentBtn">حفظ</button><button class="neutral" id="cancelResident">إلغاء</button></div>';
+ $('saveResidentBtn').onclick=()=>saveResident(id,m);
+ $('cancelResident').onclick=closeModal;
+ openModal();
+}
+function saveResident(id,effectiveMonth){
+ const unit=$('rUnit').value.trim(),name=$('rName').value.trim(),fee=Number($('rFee').value||0);
+ if(!unit)return alert('أدخل رقم الوحدة');
+ if(!name)return alert('أدخل اسم الساكن');
+ if(id){
+   const r=db.residents.find(x=>x.id===id);
+   r.unit=unit;r.name=name;
+   r.fee=fee;
+   r.feeHistory=Array.isArray(r.feeHistory)?r.feeHistory:[];
+   const old=r.feeHistory.findIndex(h=>h.month===effectiveMonth);
+   if(old>=0)r.feeHistory[old]={month:effectiveMonth,fee};else r.feeHistory.push({month:effectiveMonth,fee});
+   r.feeHistory.sort((a,b)=>a.month.localeCompare(b.month));
+ }else{
+   db.residents.push({id:uid(),unit,name,fee,active:true,feeHistory:[{month:effectiveMonth,fee}]});
+ }
+ save();closeModal();renderAll();
+}
+function payResident(id){
+ const r=db.residents.find(x=>x.id===id),m=$('residentMonth').value||currentMonth(),fee=residentFee(r,m),paid=paidFor(r,m);
+ $('sheet').innerHTML='<h2>تحصيل من شقة '+escapeHtml(r.unit)+'</h2><div class="notice">المطلوب في '+fmtMonth(m)+': <b>'+money(fee)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b>'+money(Math.max(0,fee-paid))+'</b></div>'+
+ '<label>المبلغ المدفوع</label><input id="payAmount" type="number" min="0" step="0.01" inputmode="decimal" value="'+Math.max(0,fee-paid)+'">'+
+ '<label>التاريخ</label><input id="payDate" type="date" value="'+today()+'">'+
+ '<label>البيان</label><input id="payNote" value="تحصيل من ساكن">'+
+ '<div class="row"><button class="primary" id="savePay">تسجيل التحصيل</button><button class="neutral" id="cancelPay">إلغاء</button></div>';
+ $('savePay').onclick=()=>{
+   const amount=Number($('payAmount').value||0),date=$('payDate').value;
+   if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
+   if(!date)return alert('اختر التاريخ');
+   db.tx.push({id:uid(),date,month:date.slice(0,7),type:'income',label:'اشتراك شهري',unit:r.unit,amount,note:$('payNote').value.trim()});
+   save();closeModal();renderAll();
+ };
+ $('cancelPay').onclick=closeModal;openModal();
+}
+function openGate(kind){
+ $('sheet').innerHTML='<h2>'+({salary:'صرف مرتب البواب',advance:'صرف سلفة للبواب',repay:'سداد سلفة البواب'}[kind])+'</h2>'+
+ (kind==='salary'?'<label>المبلغ المصروف</label><input id="gAmount" type="number" min="0" step="0.01" inputmode="decimal">':'<label>المبلغ</label><input id="gAmount" type="number" min="0" step="0.01" inputmode="decimal">')+
+ '<label>التاريخ</label><input id="gDate" type="date" value="'+today()+'"><div class="row"><button class="primary" id="saveGateBtn">حفظ</button><button class="neutral" id="cancelGate">إلغاء</button></div>';
+ $('saveGateBtn').onclick=()=>saveGate(kind);$('cancelGate').onclick=closeModal;openModal();
+}
+function saveGate(kind){
+ const amount=Number($('gAmount').value||0),date=$('gDate').value;
+ if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');if(!date)return alert('اختر التاريخ');
+ if(kind==='repay'){
+   const balance=db.gate.ops.filter(x=>x.kind==='advance').reduce((s,x)=>s+x.amount,0)-db.gate.ops.filter(x=>x.kind==='repay').reduce((s,x)=>s+x.amount,0);
+   if(amount>balance)return alert('مبلغ السداد أكبر من رصيد السلف المستحق.');
+ }
+ db.gate.ops.push({id:uid(),date,kind,amount,note:''});
+ if(kind==='salary'){
+   db.gate.salary=amount;
+   db.tx.push({id:uid(),date,month:date.slice(0,7),type:'expense',label:'مرتب البواب',amount,note:'صرف مرتب'});
+ }
+ save();closeModal();renderAll();
+}
+function deleteTx(id){if(!confirm('حذف العملية؟ سيتم إعادة احتساب الأرصدة.'))return;db.tx=db.tx.filter(x=>x.id!==id);save();renderAll()}
+function deleteGate(id){
+ const x=db.gate.ops.find(z=>z.id===id);if(!x)return;
+ if(x.kind==='repay'){/* allow deletion */}
+ if(!confirm('حذف حركة البواب؟ سيتم إعادة احتساب رصيد السلف والنقدية.'))return;
+ db.gate.ops=db.gate.ops.filter(z=>z.id!==id);
+ if(x.kind==='salary'){
+   db.tx=db.tx.filter(t=>!(t.date===x.date&&t.type==='expense'&&t.label==='مرتب البواب'&&Number(t.amount)===Number(x.amount)));
+ }
+ save();renderAll();
+}
+function exportData(){
+ const payload={app:'حسابات برج مكة',schemaVersion:VERSION,exportedAt:new Date().toISOString(),data:db};
+ const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='حسابات-برج-مكة-نسخة-احتياطية-'+today()+'.json';a.click();
+ setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function importData(file){
+ const reader=new FileReader();
+ reader.onload=()=>{
+   try{
+     const parsed=JSON.parse(reader.result);
+     const incoming=parsed.data||parsed;
+     const migrated=migrate(incoming);
+     const backup=JSON.stringify(db);
+     localStorage.setItem(KEY,backup);
+     db=migrated;save();alert('تم استيراد النسخة الاحتياطية بنجاح.');location.reload();
+   }catch(e){alert('الملف غير صالح أو غير متوافق. لم يتم تغيير البيانات.')}
+ };
+ reader.readAsText(file);
+}
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function escapeAttr(v){return escapeHtml(v)}
+
+$('dashMonth').addEventListener('change',renderDashboard);
+$('dashRefresh').onclick=renderDashboard;
+$('quickIncome').onclick=()=>openTx('income');
+$('quickExpense').onclick=()=>openTx('expense');
+$('quickOpening').onclick=openOpening;
+$('filterMonth').onchange=renderTransactions;
+$('filterType').onchange=renderTransactions;
+$('residentMonth').onchange=renderResidents;
+$('addResident').onclick=()=>openResident();
+$('gateSalary').onclick=()=>openGate('salary');
+$('gateAdvance').onclick=()=>openGate('advance');
+$('gateRepay').onclick=()=>openGate('repay');
+$('reportMonth').onchange=renderReport;
+$('printReport').onclick=()=>window.print();
+$('exportBtn').onclick=exportData;
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''};
+$('resetBtn').onclick=()=>{if(confirm('سيتم حذف كل بيانات هذا الجهاز. تأكد أنك تملك نسخة احتياطية. هل تريد المتابعة؟')){localStorage.removeItem(KEY);location.reload()}};
+
+nav();
+setSelects(currentMonth());
+renderAll();
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+})();
+</script>
+</body>
+</html>
