@@ -1,4 +1,4 @@
-const CACHE = 'borg-makka-v9';
+const CACHE = 'borg-makka-v10';
 
 const ASSETS = [
   './',
