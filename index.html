@@ -70,6 +70,13 @@ hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 @media print{
 header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}main{max-width:none;padding:0}.print-table{min-width:0}
 }
+
+.operation-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+.operation-card{border:0;border-radius:20px;padding:24px 12px;background:#fff;box-shadow:0 3px 16px #173b5d14;font-size:17px;font-weight:900;text-align:center}
+.operation-card .op-icon{font-size:38px;display:block;margin-bottom:8px}
+.operation-card.income-op{background:#e9f8ef;color:var(--green)}
+.operation-card.expense-op{background:#fff0f0;color:var(--red)}
+@media(max-width:480px){.operation-cards{grid-template-columns:1fr 1fr}.operation-card{padding:20px 8px}}
 </style>
 </head>
 <body>
@@ -79,6 +86,20 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 </header>
 <main>
 <nav id="nav"></nav>
+
+<section id="newOperation">
+<div class="card">
+<h2>عملية جديدة <span class="badge">＋</span></h2>
+<div class="row">
+<div><label>التاريخ</label><input id="newOpDate" type="date"></div>
+<div><label>وصف العملية</label><input id="newOpNote" placeholder="اكتب وصفًا للعملية"></div>
+</div>
+<div class="operation-cards">
+<button class="operation-card income-op" id="newIncomeBtn"><span class="op-icon">💰</span>إضافة إيراد</button>
+<button class="operation-card expense-op" id="newExpenseBtn"><span class="op-icon">💸</span>إضافة مصروف</button>
+</div>
+</div>
+</section>
 
 <section id="dashboard" class="active-section">
 <div class="grid">
@@ -103,12 +124,21 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 
 <section id="transactions">
 <div class="card">
-<h2>العمليات</h2>
+<div class="row" style="justify-content:space-between"><h2 style="margin:0">العمليات</h2><button class="primary no-print" id="transactionsNewBtn">＋ عملية جديدة</button></div>
 <div class="row">
 <div><label>الشهر</label><select id="filterMonth"></select></div>
 <div><label>النوع</label><select id="filterType"><option value="">كل العمليات</option><option value="income">الإيرادات</option><option value="expense">المصروفات</option><option value="cash">حركات نقدية غير تشغيلية</option></select></div>
 </div>
 <div style="overflow:auto;margin-top:10px"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>النوع</th><th>المبلغ</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div>
+</div>
+</section>
+
+<section id="funders">
+<div class="card">
+<h2>الممولون</h2>
+<div class="notice">قائمة الأشخاص أو الجهات التي يمكن استقطاب إيرادات أخرى منها. السكان موجودون تلقائيًا ويمكن إضافة ممولين آخرين.</div>
+<button class="primary no-print" id="addFunder">＋ إضافة ممول</button>
+<div style="overflow:auto;margin-top:10px"><table><thead><tr><th>الاسم</th><th>النوع</th><th>الهاتف</th><th></th></tr></thead><tbody id="fundersBody"></tbody></table></div>
 </div>
 </section>
 
@@ -191,7 +221,7 @@ const defaultCats={
 };
 
 function blankDB(){
- return {schemaVersion:VERSION,opening:{},tx:[],residents:[],gate:{salary:0,ops:[]},categories:JSON.parse(JSON.stringify(defaultCats))};
+ return {schemaVersion:VERSION,opening:{},tx:[],residents:[],funders:[],gate:{salary:0,ops:[]},categories:JSON.parse(JSON.stringify(defaultCats))};
 }
 
 function migrate(raw){
@@ -199,6 +229,7 @@ function migrate(raw){
  if(!d.opening)d.opening={};
  if(!Array.isArray(d.tx))d.tx=[];
  if(!Array.isArray(d.residents))d.residents=[];
+ if(!Array.isArray(d.funders))d.funders=[];
  if(!d.gate||typeof d.gate!=='object')d.gate={salary:0,ops:[]};
  if(!Array.isArray(d.gate.ops))d.gate.ops=[];
  if(!d.categories||typeof d.categories!=='object')d.categories={};
@@ -208,8 +239,9 @@ function migrate(raw){
  d.tx=d.tx.map(x=>({
    id:x.id||uid(),date:x.date||today(),month:x.month||(x.date||today()).slice(0,7),
    type:x.type==='income'?'income':'expense',label:String(x.label||'عملية'),amount:Number(x.amount||0),
-   note:String(x.note||''),unit:x.unit!=null?String(x.unit):''
+   note:String(x.note||''),unit:x.unit!=null?String(x.unit):'',residentId:x.residentId||'',residentName:x.residentName||'',funderId:x.funderId||'',funderName:x.funderName||''
  }));
+ d.funders=d.funders.map(f=>({id:f.id||uid(),name:String(f.name||''),type:String(f.type||'جهة/شخص'),phone:String(f.phone||''),active:f.active!==false}));
  d.residents=d.residents.map(r=>({
    id:r.id||uid(),unit:(r.unit===undefined||r.unit===null)?'':String(r.unit),name:(r.name===undefined||r.name===null||String(r.name).trim().toLowerCase()==='undefined')?'':String(r.name),
    fee:Number(r.fee||0),active:r.active!==false,
@@ -286,10 +318,10 @@ function residentFee(r,m){
  return fee;
 }
 function paidFor(r,m){
- return db.tx.filter(x=>x.type==='income'&&x.unit===r.unit&&x.month===m).reduce((s,x)=>s+Number(x.amount||0),0);
+ return db.tx.filter(x=>x.type==='income'&&x.month===m&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
 }
 function nav(){
- const items=[['dashboard','الرئيسية'],['transactions','العمليات'],['residents','السكان'],['gate','البواب'],['reports','التقارير'],['settings','الإعدادات']];
+ const items=[['dashboard','الرئيسية'],['newOperation','＋ عملية جديدة'],['transactions','العمليات'],['residents','السكان'],['funders','الممولون'],['gate','البواب'],['reports','التقارير'],['settings','الإعدادات']];
  $('nav').innerHTML=items.map(([id,t])=>'<button class="navbtn" data-section="'+id+'">'+t+'</button>').join('');
  document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>show(b.dataset.section,b)));
  $('nav').querySelector('[data-section="dashboard"]').classList.add('active');
@@ -313,7 +345,7 @@ function renderTransactions(){
  const m=$('filterMonth').value||currentMonth(),f=$('filterType').value;
  const arr=db.tx.filter(x=>x.month===m&&(!f||x.type===f));
  $('txBody').innerHTML=arr.sort((a,b)=>b.date.localeCompare(a.date)).map(x=>
- '<tr><td>'+x.date+'</td><td>'+escapeHtml(x.label)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+(x.note?'<div class="small">'+escapeHtml(x.note)+'</div>':'')+'</td>'+
+ '<tr><td>'+x.date+'</td><td>'+escapeHtml(x.label)+(x.residentName?' — '+escapeHtml(x.residentName):'')+(x.funderName&&!x.residentName?' — '+escapeHtml(x.funderName):'')+(x.unit?' — شقة '+escapeHtml(x.unit):'')+(x.note?'<div class="small">'+escapeHtml(x.note)+'</div>':'')+'</td>'+
  '<td class="'+(x.type==='income'?'green':'red')+'">'+(x.type==='income'?'إيراد':'مصروف')+'</td>'+
  '<td class="'+(x.type==='income'?'green':'red')+'">'+money(x.amount)+'</td>'+
  '<td class="actions"><button class="neutral edit-tx" data-id="'+x.id+'">تعديل</button><button class="expense del-tx" data-id="'+x.id+'">حذف</button></td></tr>'
@@ -321,6 +353,26 @@ function renderTransactions(){
  document.querySelectorAll('.edit-tx').forEach(b=>b.onclick=()=>openTx(db.tx.find(x=>x.id===b.dataset.id)?.type,b.dataset.id));
  document.querySelectorAll('.del-tx').forEach(b=>b.onclick=()=>deleteTx(b.dataset.id));
 }
+function renderFunders(){
+ const rows=db.funders.filter(f=>f.active!==false).map(f=>'<tr><td>'+escapeHtml(f.name)+'</td><td>'+escapeHtml(f.type)+'</td><td>'+escapeHtml(f.phone||'—')+'</td><td class="actions"><button class="neutral edit-funder" data-id="'+f.id+'">تعديل</button><button class="expense del-funder" data-id="'+f.id+'">حذف</button></td></tr>').join('');
+ const residentRows=db.residents.filter(r=>r.active!==false).map(r=>'<tr><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>ساكن</td><td>'+escapeHtml(r.unit?'وحدة '+r.unit:'—')+'</td><td></td></tr>').join('');
+ $('fundersBody').innerHTML=(residentRows+rows)||'<tr><td colspan="4">لا يوجد ممولون.</td></tr>';
+ document.querySelectorAll('.edit-funder').forEach(b=>b.onclick=()=>openFunder(b.dataset.id));
+ document.querySelectorAll('.del-funder').forEach(b=>b.onclick=()=>{if(confirm('حذف الممول من القائمة؟ لن تُحذف عملياته السابقة.')){const f=db.funders.find(x=>x.id===b.dataset.id);if(f)f.active=false;save();renderAll()}});
+}
+function openFunder(id){
+ const old=id?db.funders.find(x=>x.id===id):null;
+ $('sheet').innerHTML='<h2>'+(old?'تعديل ممول':'إضافة ممول')+'</h2>'+ '<label>اسم الممول</label><input id="fuName" value="'+escapeAttr(old?.name||'')+'" placeholder="اسم الشخص أو الجهة">'+ '<label>النوع</label><input id="fuType" value="'+escapeAttr(old?.type||'جهة/شخص')+'">'+ '<label>الهاتف</label><input id="fuPhone" value="'+escapeAttr(old?.phone||'')+'" inputmode="tel">'+ '<div class="row" style="margin-top:12px"><button class="primary" id="saveFunder">حفظ</button><button class="neutral" id="cancelFunder">إلغاء</button></div>';
+ $('saveFunder').onclick=()=>{const name=$('fuName').value.trim();if(!name)return alert('أدخل اسم الممول');const o={id:id||uid(),name,type:$('fuType').value.trim()||'جهة/شخص',phone:$('fuPhone').value.trim(),active:true};if(id)db.funders=db.funders.map(f=>f.id===id?o:f);else db.funders.push(o);save();closeModal();renderAll()};
+ $('cancelFunder').onclick=closeModal;openModal();
+}
+function funderOptions(includeResidents=true){
+ let out='';
+ if(includeResidents){out+='<optgroup label="السكان">'+db.residents.filter(r=>r.active!==false).map(r=>'<option value="resident:'+r.id+'">'+escapeHtml((r.name||'بدون اسم')+' — وحدة '+r.unit)+'</option>').join('')+'</optgroup>';}
+ out+='<optgroup label="الممولون الآخرون">'+db.funders.filter(f=>f.active!==false).map(f=>'<option value="funder:'+f.id+'">'+escapeHtml(f.name)+'</option>').join('')+'</optgroup>';
+ return out;
+}
+
 function renderResidents(){
  const m=$('residentMonth').value||currentMonth();
  $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
@@ -374,10 +426,49 @@ function renderCats(){
    db.categories[b.dataset.cat][Number(b.dataset.index)]=v;save();renderCats();
  });
 }
-function renderAll(){renderDashboard();renderTransactions();renderResidents();renderGate();renderReport();renderCats()}
+function renderAll(){renderDashboard();renderTransactions();renderResidents();renderFunders();renderGate();renderReport();renderCats()}
 function openModal(){ $('modal').classList.add('show') }
 function closeModal(){ $('modal').classList.remove('show'); $('sheet').innerHTML='' }
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
+
+function openNewIncome(){
+ const date=$('newOpDate').value||today(), note=$('newOpNote').value.trim();
+ $('sheet').innerHTML='<h2>إضافة إيراد</h2>'+ '<label>نوع الإيراد</label><div class="row"><select id="incomeKind"><option value="subscription">الاشتراكات الشهرية</option>'+db.categories.income.filter(c=>c!=='اشتراك شهري').map(c=>'<option value="other:'+escapeAttr(c)+'">'+escapeHtml(c)+'</option>').join('')+'</select><button class="neutral" id="addIncomeCat">＋ مسمى جديد</button></div>'+ '<div id="incomeDetails"></div>'+ '<label>التاريخ</label><input id="fDate" type="date" value="'+escapeAttr(date)+'">'+ '<label>وصف العملية</label><input id="fNote" value="'+escapeAttr(note)+'" placeholder="وصف العملية">'+ '<div class="row" style="margin-top:12px"><button class="primary" id="saveIncome">حفظ الإيراد</button><button class="neutral" id="cancelIncome">إلغاء</button></div>';
+ function details(){
+   const v=$('incomeKind').value;
+   if(v==='subscription'){
+     $('incomeDetails').innerHTML='<label>اختر الساكن</label><select id="incomeResident"><option value="">اختر الساكن</option>'+db.residents.filter(r=>r.active!==false).map(r=>'<option value="'+r.id+'">'+escapeHtml((r.name||'بدون اسم')+' — وحدة '+r.unit)+'</option>').join('')+'</select><div id="residentIncomeInfo" class="notice" style="display:none"></div><label>المبلغ الشهري المحصل</label><input id="incomeAmount" type="number" min="0" step="0.01" inputmode="decimal">';
+     $('incomeResident').onchange=()=>{const r=db.residents.find(x=>x.id===$('incomeResident').value);const m=$('fDate').value.slice(0,7);if(r){$('incomeAmount').value=Math.max(0,residentFee(r,m)-paidFor(r,m));$('residentIncomeInfo').style.display='block';$('residentIncomeInfo').innerHTML='<b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الاشتراك: '+money(residentFee(r,m))+' — المحصل سابقًا: '+money(paidFor(r,m));}};
+   }else{
+     $('incomeDetails').innerHTML='<label>الممول</label><select id="incomeFunder">'+funderOptions(true)+'</select><label>المبلغ</label><input id="incomeAmount" type="number" min="0" step="0.01" inputmode="decimal">';
+   }
+ }
+ details();$('incomeKind').onchange=details;
+ $('addIncomeCat').onclick=()=>{const n=prompt('اكتب مسمى الإيراد الجديد:');if(!n)return;const v=n.trim();if(!v)return;if(!db.categories.income.includes(v)){db.categories.income.push(v);save();}openNewIncome()};
+ $('saveIncome').onclick=()=>saveNewIncome();$('cancelIncome').onclick=closeModal;openModal();
+}
+function saveNewIncome(){
+ const amount=Number($('incomeAmount')?.value||0),date=$('fDate').value||today(),kind=$('incomeKind').value,note=$('fNote').value.trim();
+ if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
+ let o={id:uid(),date,month:date.slice(0,7),type:'income',label:'إيراد',amount,note,unit:'',residentId:'',residentName:'',funderId:'',funderName:''};
+ if(kind==='subscription'){
+   const r=db.residents.find(x=>x.id===$('incomeResident').value);if(!r)return alert('اختر الساكن');
+   o.label='اشتراك شهري';o.unit=String(r.unit);o.residentId=r.id;o.residentName=String(r.name||'بدون اسم');o.note=note||('تحصيل اشتراك شهري — '+o.residentName+' — وحدة '+o.unit);
+ }else{
+   const val=$('incomeFunder').value;
+   if(!val)return alert('أضف ممولًا أولًا');
+   if(val.startsWith('resident:')){const r=db.residents.find(x=>x.id===val.slice(9));if(r){o.unit=String(r.unit);o.residentId=r.id;o.residentName=String(r.name||'بدون اسم');o.funderName=o.residentName;o.label=$('incomeKind').value.split(':')[1]||'إيراد آخر';o.note=note||('إيراد من '+o.residentName+' — وحدة '+o.unit);}}
+   else {const f=db.funders.find(x=>x.id===val.slice(7));if(!f)return alert('اختر ممولًا صحيحًا');o.funderId=f.id;o.funderName=f.name;o.label=$('incomeKind').value.split(':')[1]||'إيراد آخر';o.note=note||('إيراد من '+f.name);}
+ }
+ db.tx.push(o);save();closeModal();renderAll();show('transactions',$('nav').querySelector('[data-section="transactions"]'));
+}
+function openNewExpense(){
+ const date=$('newOpDate').value||today(),note=$('newOpNote').value.trim();
+ $('sheet').innerHTML='<h2>إضافة مصروف</h2><label>مسمى المصروف</label><div class="row"><select id="expenseKind">'+db.categories.expense.map(c=>'<option value="'+escapeAttr(c)+'">'+escapeHtml(c)+'</option>').join('')+'</select><button class="neutral" id="addExpenseCat">＋ مسمى جديد</button></div><label>المبلغ</label><input id="expenseAmount" type="number" min="0" step="0.01" inputmode="decimal"><label>التاريخ</label><input id="expenseDate" type="date" value="'+escapeAttr(date)+'"><label>وصف العملية</label><input id="expenseNote" value="'+escapeAttr(note)+'"><div class="row" style="margin-top:12px"><button class="primary" id="saveExpense">حفظ المصروف</button><button class="neutral" id="cancelExpense">إلغاء</button></div>';
+ $('addExpenseCat').onclick=()=>{const n=prompt('اكتب مسمى المصروف الجديد:');if(!n)return;const v=n.trim();if(!v)return;if(!db.categories.expense.includes(v)){db.categories.expense.push(v);save();}openNewExpense()};
+ $('saveExpense').onclick=()=>{const amount=Number($('expenseAmount').value||0),date=$('expenseDate').value||today();if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');db.tx.push({id:uid(),date,month:date.slice(0,7),type:'expense',label:$('expenseKind').value,amount,note:$('expenseNote').value.trim(),unit:'',residentId:'',residentName:'',funderId:'',funderName:''});save();closeModal();renderAll();show('transactions',$('nav').querySelector('[data-section="transactions"]'))};
+ $('cancelExpense').onclick=closeModal;openModal();
+}
 
 function openTx(type,id){
  const old=id?db.tx.find(x=>x.id===id):null;
@@ -522,6 +613,11 @@ $('dashRefresh').onclick=renderDashboard;
 $('quickIncome').onclick=()=>openTx('income');
 $('quickExpense').onclick=()=>openTx('expense');
 $('quickOpening').onclick=openOpening;
+$('transactionsNewBtn').onclick=()=>show('newOperation',$('nav').querySelector('[data-section="newOperation"]'));
+$('newOpDate').value=today();
+$('newIncomeBtn').onclick=openNewIncome;
+$('newExpenseBtn').onclick=openNewExpense;
+$('addFunder').onclick=()=>openFunder();
 $('filterMonth').onchange=renderTransactions;
 $('filterType').onchange=renderTransactions;
 $('residentMonth').onchange=renderResidents;
