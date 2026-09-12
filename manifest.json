@@ -1,18 +1,11 @@
 {
-  "name": "حسابات برج مكة",
-  "short_name": "برج مكة",
-  "start_url": ".",
-  "display": "standalone",
-  "dir": "rtl",
-  "lang": "ar",
-  "theme_color": "#123b5d",
-  "background_color": "#f4f7fa",
-  "icons": [
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ]
+  "name":"حسابات برج مكة",
+  "short_name":"برج مكة",
+  "start_url":".",
+  "display":"standalone",
+  "dir":"rtl",
+  "lang":"ar",
+  "theme_color":"#123b5d",
+  "background_color":"#f4f7fa",
+  "icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }

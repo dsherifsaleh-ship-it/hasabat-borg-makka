@@ -691,12 +691,26 @@ function importData(file){
  reader.onload=()=>{
    try{
      const parsed=JSON.parse(reader.result);
-     const incoming=parsed.data||parsed;
+     const incoming=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:parsed;
      const migrated=migrate(incoming);
-     const backup=JSON.stringify(db);
-     localStorage.setItem(KEY,backup);
-     db=migrated;save();alert('تم استيراد النسخة الاحتياطية بنجاح.');location.reload();
-   }catch(e){alert('الملف غير صالح أو غير متوافق. لم يتم تغيير البيانات.')}
+     const countResidents=Array.isArray(migrated.residents)?migrated.residents.length:0;
+     const countTx=Array.isArray(migrated.tx)?migrated.tx.length:0;
+     if(!countResidents && !countTx && !Object.keys(migrated.opening||{}).length){
+       throw new Error('empty-backup');
+     }
+     const current=localStorage.getItem(KEY);
+     const backupKey=KEY+'__before_import_'+Date.now();
+     if(current!==null) localStorage.setItem(backupKey,current);
+     localStorage.setItem(KEY,JSON.stringify(migrated));
+     db=migrated;
+     save();
+     alert('تم استيراد النسخة الاحتياطية بنجاح.\\nالسكان: '+ar(countResidents)+'\\nالعمليات: '+ar(countTx)+'\\nتم الاحتفاظ بنسخة أمان قبل الاستيراد.');
+     location.reload();
+   }catch(e){
+     alert(e&&e.message==='empty-backup'
+       ? 'النسخة الاحتياطية لا تحتوي على سكان أو عمليات أو أرصدة. لم يتم تغيير البيانات.'
+       : 'الملف غير صالح أو غير متوافق. لم يتم تغيير البيانات.');
+   }
  };
  reader.readAsText(file);
 }
