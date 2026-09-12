@@ -77,6 +77,7 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 .operation-card.income-op{background:#e9f8ef;color:var(--green)}
 .operation-card.expense-op{background:#fff0f0;color:var(--red)}
 @media(max-width:480px){.operation-cards{grid-template-columns:1fr 1fr}.operation-card{padding:20px 8px}}
+.operation-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.operation-card{border:0;border-radius:18px;padding:22px 12px;font-size:17px;font-weight:900}.income-op{background:#e7f7ee;color:var(--green)}.expense-op{background:#fff0f0;color:var(--red)}.op-icon{display:block;font-size:30px;margin-bottom:7px}.accounting-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.voided{opacity:.55;text-decoration:line-through}@media(min-width:700px){.accounting-mini{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
 <body>
@@ -117,7 +118,7 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 <div class="row no-print">
 <button class="income" id="quickIncome">＋ إضافة إيراد</button>
 <button class="expense" id="quickExpense">＋ إضافة مصروف</button>
-<button class="neutral" id="quickOpening">تعديل/تحديد رصيد البداية</button>
+<button class="neutral" id="quickOpening">＋ إضافة رصيد افتتاحي</button>
 </div>
 </div>
 </section>
@@ -151,6 +152,8 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 </div>
 </section>
 
+<section id="suppliers"><div class="card"><h2>الموردون ومقدمو الخدمات</h2><div class="notice">سجل الموردين يساعد على معرفة الجهة التي تم الدفع لها. حذف المورد من القائمة لا يحذف أي عملية تاريخية.</div><button class="primary no-print" id="addSupplier">＋ إضافة مورد</button><div style="overflow:auto;margin-top:10px"><table><thead><tr><th>الاسم</th><th>النوع</th><th>الهاتف</th><th></th></tr></thead><tbody id="suppliersBody"></tbody></table></div></div></section>
+
 <section id="gate">
 <div class="card">
 <h2>حساب البواب</h2>
@@ -170,6 +173,8 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 </div>
 </section>
 
+<section id="accounting"><div class="card"><h2>الحسابات والتقارير المحاسبية</h2><div class="notice">القاعدة المحاسبية: الرصيد الافتتاحي يُرحّل من الرصيد النهائي للشهر السابق. الاستثناء الوحيد هو رصيد افتتاحي يدوي تحدده أنت لشهر معين.</div><div class="row"><div><label>الشهر</label><select id="accMonth"></select></div><div><label>السنة</label><select id="accYear"></select></div></div><div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">المستحق على السكان</div><div id="accDue" class="value red">٠ ج.م</div></div><div class="kpi"><div class="label">المحصل</div><div id="accCollected" class="value green">٠ ج.م</div></div><div class="kpi"><div class="label">المصروفات</div><div id="accExpenses" class="value red">٠ ج.م</div></div><div class="kpi"><div class="label">رصيد الخزينة</div><div id="accCash" class="value blue">٠ ج.م</div></div></div><hr><h3>المتأخرات</h3><div style="overflow:auto"><table><thead><tr><th>الوحدة</th><th>الساكن</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th></tr></thead><tbody id="accArrearsBody"></tbody></table></div><hr><h3>كشف حساب ساكن</h3><div class="row"><div><label>الساكن</label><select id="accResident"></select></div><div style="display:flex;align-items:end"><button class="primary" id="accResidentBtn">عرض الكشف</button></div></div><div id="accResidentStatement"></div><hr><h3>تقرير سنوي</h3><button class="primary" id="accAnnualBtn">إظهار التقرير السنوي</button><div id="accAnnual"></div><hr><h3>تسوية الخزينة</h3><div class="row"><div><label>الرصيد الدفتري</label><input id="accBookCash" readonly></div><div><label>الرصيد الفعلي</label><input id="accActualCash" type="number" inputmode="decimal"></div><div style="display:flex;align-items:end"><button class="neutral" id="accReconcileBtn">حساب الفرق</button></div></div><div id="accReconcile"></div></div></section>
+
 <section id="reports">
 <div class="card">
 <div class="row no-print"><div><label>الشهر</label><select id="reportMonth"></select></div><div style="display:flex;align-items:end"><button class="primary" id="printReport">طباعة / PDF</button></div></div>
@@ -180,7 +185,7 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 <section id="settings">
 <div class="card">
 <h2>الإعدادات والبيانات</h2>
-<div class="notice">هذه النسخة تستخدم ترحيلًا آمنًا للبيانات القديمة.<br><b>قبل أي تحديث:</b> صدّر نسخة احتياطية من بياناتك واحتفظ بها خارج الهاتف. تغيير اسم فئة لا يغيّر وصف العمليات السابقة. كما يمكن تصدير نسخة احتياطية واستيرادها.</div>
+<div class="notice">هذه النسخة تستخدم ترحيلًا آمنًا للبيانات القديمة. تغيير اسم فئة لا يغيّر وصف العمليات السابقة. كما يمكن تصدير نسخة احتياطية واستيرادها.</div>
 <div class="row no-print">
 <button class="neutral" id="exportBtn">تصدير نسخة احتياطية</button>
 <button class="primary" id="importBtn">استيراد نسخة احتياطية</button>
@@ -207,7 +212,7 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 'use strict';
 
 const KEY='hasabat_borg_makka_v1';
-const VERSION=3;
+const VERSION=5;
 const $=id=>document.getElementById(id);
 const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)}};
 const today=()=>new Date().toISOString().slice(0,10);
@@ -215,67 +220,13 @@ const currentMonth=()=>today().slice(0,7);
 const ar=n=>Number(n||0).toLocaleString('ar-EG');
 const money=n=>ar(n)+' ج.م';
 
-
-function safeMigrateData(){
-  try{
-    const raw=localStorage.getItem(KEY);
-    if(!raw)return;
-    const d=JSON.parse(raw);
-    if(!d || typeof d!=='object')return;
-
-    // Preserve every existing field and only add missing structures.
-    if(!Array.isArray(d.tx))d.tx=[];
-    if(!Array.isArray(d.residents))d.residents=[];
-    if(!Array.isArray(d.funders))d.funders=[];
-    if(!Array.isArray(d.suppliers))d.suppliers=[];
-    if(!d.gate || typeof d.gate!=='object')d.gate={salary:0,ops:[]};
-    if(!Array.isArray(d.gate.ops))d.gate.ops=[];
-    if(!d.opening || typeof d.opening!=='object')d.opening={};
-    if(!d.categories || typeof d.categories!=='object')d.categories={};
-    if(!Array.isArray(d.categories.income))d.categories.income=[];
-    if(!Array.isArray(d.categories.expense))d.categories.expense=[];
-
-    d.residents=d.residents.map(r=>{
-      const x={...r};
-      if(!x.id)x.id=uid();
-      if(x.name==null && x.residentName!=null)x.name=String(x.residentName);
-      x.name=String(x.name||'');
-      x.unit=String(x.unit||'');
-      if(x.active===undefined)x.active=true;
-      if(!Array.isArray(x.feeHistory))x.feeHistory=[];
-      return x;
-    });
-
-    d.funders=d.funders.map(x=>({...x,id:x.id||uid(),name:String(x.name||''),active:x.active!==false}));
-    d.suppliers=d.suppliers.map(x=>({...x,id:x.id||uid(),name:String(x.name||''),active:x.active!==false}));
-
-    d.tx=d.tx.map(x=>{
-      const t={...x};
-      if(!t.id)t.id=uid();
-      t.amount=Number(t.amount||0);
-      t.date=t.date||today();
-      t.month=t.month||(t.date||today()).slice(0,7);
-      t.type=t.type==='expense'?'expense':'income';
-      t.voided=!!t.voided;
-      return t;
-    });
-
-    d.schemaVersion=Math.max(Number(d.schemaVersion||1),VERSION);
-    localStorage.setItem(KEY,JSON.stringify(d));
-  }catch(e){
-    // Never overwrite or delete the user's existing data on migration failure.
-    console.error('Safe migration failed; existing data left untouched.',e);
-  }
-}
-safeMigrateData();
-
 const defaultCats={
  income:['اشتراك شهري','متأخرات','إيراد خدمات','إيراد آخر'],
  expense:['كهرباء','مياه','نظافة','صيانة','مصروف طارئ','مصروف آخر']
 };
 
 function blankDB(){
- return {schemaVersion:VERSION,opening:{},tx:[],residents:[],funders:[],gate:{salary:0,ops:[]},categories:JSON.parse(JSON.stringify(defaultCats))};
+ return {schemaVersion:VERSION,opening:{},tx:[],residents:[],funders:[],suppliers:[],gate:{salary:0,ops:[]},categories:JSON.parse(JSON.stringify(defaultCats)),audit:[]};
 }
 
 function migrate(raw){
@@ -284,6 +235,8 @@ function migrate(raw){
  if(!Array.isArray(d.tx))d.tx=[];
  if(!Array.isArray(d.residents))d.residents=[];
  if(!Array.isArray(d.funders))d.funders=[];
+ if(!Array.isArray(d.suppliers))d.suppliers=[];
+ if(!Array.isArray(d.audit))d.audit=[];
  if(!d.gate||typeof d.gate!=='object')d.gate={salary:0,ops:[]};
  if(!Array.isArray(d.gate.ops))d.gate.ops=[];
  if(!d.categories||typeof d.categories!=='object')d.categories={};
@@ -293,9 +246,10 @@ function migrate(raw){
  d.tx=d.tx.map(x=>({
    id:x.id||uid(),date:x.date||today(),month:x.month||(x.date||today()).slice(0,7),
    type:x.type==='income'?'income':'expense',label:String(x.label||'عملية'),amount:Number(x.amount||0),
-   note:String(x.note||''),unit:x.unit!=null?String(x.unit):'',residentId:x.residentId||'',residentName:x.residentName||'',funderId:x.funderId||'',funderName:x.funderName||''
+   note:String(x.note||''),unit:x.unit!=null?String(x.unit):'',residentId:x.residentId||'',residentName:x.residentName||'',funderId:x.funderId||'',funderName:x.funderName||'',supplierId:x.supplierId||'',supplierName:x.supplierName||'',paymentMethod:x.paymentMethod||'نقدي',voucherNo:x.voucherNo||'',voided:!!x.voided
  }));
  d.funders=d.funders.map(f=>({id:f.id||uid(),name:String(f.name||''),type:String(f.type||'جهة/شخص'),phone:String(f.phone||''),active:f.active!==false}));
+ d.suppliers=d.suppliers.map(f=>({id:f.id||uid(),name:String(f.name||''),type:String(f.type||'مورد'),phone:String(f.phone||''),active:f.active!==false}));
  d.residents=d.residents.map(r=>({
    id:r.id||uid(),unit:(r.unit===undefined||r.unit===null)?'':String(r.unit),name:(r.name===undefined||r.name===null||String(r.name).trim().toLowerCase()==='undefined')?'':String(r.name),
    fee:Number(r.fee||0),active:r.active!==false,
@@ -354,8 +308,8 @@ function openingFor(m){
  }
  return balance;
 }
-function operatingIncome(m){return db.tx.filter(x=>x.month===m&&x.type==='income').reduce((s,x)=>s+Number(x.amount||0),0)}
-function operatingExpense(m){return db.tx.filter(x=>x.month===m&&x.type==='expense').reduce((s,x)=>s+Number(x.amount||0),0)}
+function operatingIncome(m){return db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income').reduce((s,x)=>s+Number(x.amount||0),0)}
+function operatingExpense(m){return db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='expense').reduce((s,x)=>s+Number(x.amount||0),0)}
 function advanceOut(m){return db.gate.ops.filter(x=>x.date.slice(0,7)===m&&x.kind==='advance').reduce((s,x)=>s+Number(x.amount||0),0)}
 function repayIn(m){return db.gate.ops.filter(x=>x.date.slice(0,7)===m&&x.kind==='repay').reduce((s,x)=>s+Number(x.amount||0),0)}
 function cashNonOperating(m){return repayIn(m)-advanceOut(m)}
@@ -372,10 +326,10 @@ function residentFee(r,m){
  return fee;
 }
 function paidFor(r,m){
- return db.tx.filter(x=>x.type==='income'&&x.month===m&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
+ return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month===m&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
 }
 function nav(){
- const items=[['dashboard','الرئيسية'],['newOperation','＋ عملية جديدة'],['transactions','العمليات'],['residents','السكان'],['funders','الممولون'],['gate','البواب'],['reports','التقارير'],['settings','الإعدادات']];
+ const items=[['dashboard','الرئيسية'],['newOperation','＋ عملية جديدة'],['transactions','العمليات'],['residents','السكان'],['funders','الممولون'],['suppliers','الموردون'],['gate','البواب'],['reports','التقارير'],['accounting','الحسابات'],['settings','الإعدادات']];
  $('nav').innerHTML=items.map(([id,t])=>'<button class="navbtn" data-section="'+id+'">'+t+'</button>').join('');
  document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>show(b.dataset.section,b)));
  $('nav').querySelector('[data-section="dashboard"]').classList.add('active');
@@ -399,7 +353,7 @@ function renderTransactions(){
  const m=$('filterMonth').value||currentMonth(),f=$('filterType').value;
  const arr=db.tx.filter(x=>x.month===m&&(!f||x.type===f));
  $('txBody').innerHTML=arr.sort((a,b)=>b.date.localeCompare(a.date)).map(x=>
- '<tr><td>'+x.date+'</td><td>'+escapeHtml(x.label)+(x.residentName?' — '+escapeHtml(x.residentName):'')+(x.funderName&&!x.residentName?' — '+escapeHtml(x.funderName):'')+(x.unit?' — شقة '+escapeHtml(x.unit):'')+(x.note?'<div class="small">'+escapeHtml(x.note)+'</div>':'')+'</td>'+
+ '<tr class="'+(x.voided?'voided':'')+'"><td>'+x.date+'</td><td>'+escapeHtml(x.label)+(x.residentName?' — '+escapeHtml(x.residentName):'')+(x.funderName&&!x.residentName?' — '+escapeHtml(x.funderName):'')+(x.supplierName?' — المورد: '+escapeHtml(x.supplierName):'')+(x.unit?' — شقة '+escapeHtml(x.unit):'')+(x.note?'<div class="small">'+escapeHtml(x.note)+'</div>':'')+(x.voucherNo?'<div class="small">'+escapeHtml(x.voucherNo)+' — '+escapeHtml(x.paymentMethod||'نقدي')+'</div>':'')+'</td>'+
  '<td class="'+(x.type==='income'?'green':'red')+'">'+(x.type==='income'?'إيراد':'مصروف')+'</td>'+
  '<td class="'+(x.type==='income'?'green':'red')+'">'+money(x.amount)+'</td>'+
  '<td class="actions"><button class="neutral edit-tx" data-id="'+x.id+'">تعديل</button><button class="expense del-tx" data-id="'+x.id+'">حذف</button></td></tr>'
@@ -407,6 +361,19 @@ function renderTransactions(){
  document.querySelectorAll('.edit-tx').forEach(b=>b.onclick=()=>openTx(db.tx.find(x=>x.id===b.dataset.id)?.type,b.dataset.id));
  document.querySelectorAll('.del-tx').forEach(b=>b.onclick=()=>deleteTx(b.dataset.id));
 }
+function renderSuppliers(){
+ const rows=db.suppliers.filter(x=>x.active!==false).map(x=>'<tr><td>'+escapeHtml(x.name)+'</td><td>'+escapeHtml(x.type)+'</td><td>'+escapeHtml(x.phone||'—')+'</td><td class="actions"><button class="neutral edit-supplier" data-id="'+x.id+'">تعديل</button><button class="expense del-supplier" data-id="'+x.id+'">إلغاء</button></td></tr>').join('');
+ $('suppliersBody').innerHTML=rows||'<tr><td colspan="4">لا يوجد موردون.</td></tr>';
+ document.querySelectorAll('.edit-supplier').forEach(b=>b.onclick=()=>openSupplier(b.dataset.id));
+ document.querySelectorAll('.del-supplier').forEach(b=>b.onclick=()=>{const x=db.suppliers.find(z=>z.id===b.dataset.id);if(x){x.active=false;save();renderAll()}});
+}
+function openSupplier(id){
+ const old=id?db.suppliers.find(x=>x.id===id):null;
+ $('sheet').innerHTML='<h2>'+(old?'تعديل مورد':'إضافة مورد')+'</h2><label>اسم المورد</label><input id="suName" value="'+escapeAttr(old?.name||'')+'"><label>نوع الخدمة</label><input id="suType" value="'+escapeAttr(old?.type||'مورد')+'"><label>الهاتف</label><input id="suPhone" value="'+escapeAttr(old?.phone||'')+'" inputmode="tel"><div class="row"><button class="primary" id="saveSupplier">حفظ</button><button class="neutral" id="cancelSupplier">إلغاء</button></div>';
+ $('saveSupplier').onclick=()=>{const name=$('suName').value.trim();if(!name)return alert('أدخل اسم المورد');const o={id:id||uid(),name,type:$('suType').value.trim()||'مورد',phone:$('suPhone').value.trim(),active:true};if(id)db.suppliers=db.suppliers.map(x=>x.id===id?o:x);else db.suppliers.push(o);save();closeModal();renderAll()};$('cancelSupplier').onclick=closeModal;openModal();
+}
+function supplierOptions(){return '<option value="">بدون تحديد</option>'+db.suppliers.filter(x=>x.active!==false).map(x=>'<option value="'+x.id+'">'+escapeHtml(x.name)+'</option>').join('')}
+
 function renderFunders(){
  const rows=db.funders.filter(f=>f.active!==false).map(f=>'<tr><td>'+escapeHtml(f.name)+'</td><td>'+escapeHtml(f.type)+'</td><td>'+escapeHtml(f.phone||'—')+'</td><td class="actions"><button class="neutral edit-funder" data-id="'+f.id+'">تعديل</button><button class="expense del-funder" data-id="'+f.id+'">حذف</button></td></tr>').join('');
  const residentRows=db.residents.filter(r=>r.active!==false).map(r=>'<tr><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>ساكن</td><td>'+escapeHtml(r.unit?'وحدة '+r.unit:'—')+'</td><td></td></tr>').join('');
@@ -451,8 +418,8 @@ function renderGate(){
 }
 function renderReport(){
  const m=$('reportMonth').value||currentMonth(),t=totals(m);
- const inc=db.tx.filter(x=>x.month===m&&x.type==='income');
- const exp=db.tx.filter(x=>x.month===m&&x.type==='expense');
+ const inc=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income');
+ const exp=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='expense');
  $('report').innerHTML='<div class="report-head"><h2 style="margin-top:0">حسابات برج مكة</h2><div class="month-title">'+fmtMonth(m)+'</div>'+
  '<div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">الرصيد الافتتاحي</div><div class="value blue">'+money(t.open)+'</div></div>'+
  '<div class="kpi"><div class="label">الإيرادات</div><div class="value green">'+money(t.inc)+'</div></div>'+
@@ -480,7 +447,18 @@ function renderCats(){
    db.categories[b.dataset.cat][Number(b.dataset.index)]=v;save();renderCats();
  });
 }
-function renderAll(){renderDashboard();renderTransactions();renderResidents();renderFunders();renderGate();renderReport();renderCats()}
+function renderAccounting(){
+ const m=$('accMonth')?.value||currentMonth(), t=totals(m);
+ if($('accDue')){let due=0,paid=0;db.residents.filter(r=>r.active!==false).forEach(r=>{due+=residentFee(r,m);paid+=paidFor(r,m)});$('accDue').textContent=money(due);$('accCollected').textContent=money(paid);$('accExpenses').textContent=money(t.exp);$('accCash').textContent=money(t.close);$('accBookCash').value=t.close;}
+ if($('accResident'))$('accResident').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>'<option value="'+r.id+'">'+escapeHtml(r.name||'بدون اسم')+' — وحدة '+escapeHtml(r.unit)+'</option>').join('');
+ const rows=db.residents.filter(r=>r.active!==false).map(r=>{const due=residentFee(r,m),paid=paidFor(r,m),rem=Math.max(0,due-paid);return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>'+money(due)+'</td><td class="green">'+money(paid)+'</td><td class="'+(rem?'red':'green')+'">'+money(rem)+'</td></tr>'}).join('');
+ if($('accArrearsBody'))$('accArrearsBody').innerHTML=rows||'<tr><td colspan="5">لا يوجد سكان.</td></tr>';
+ const years=[...new Set(months(36).map(x=>x.slice(0,4)))];if($('accYear'))$('accYear').innerHTML=years.map(y=>'<option>'+y+'</option>').join('');
+}
+function showAccResident(){const r=db.residents.find(x=>x.id===$('accResident').value),m=$('accMonth').value||currentMonth();if(!r)return;const ms=months(36).slice().reverse().filter(x=>x<=m);let due=0,paid=0;const rows=ms.map(mm=>{const d=residentFee(r,mm),p=paidFor(r,mm);due+=d;paid+=p;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(d)+'</td><td class="green">'+money(p)+'</td><td class="'+(d-p>0?'red':'green')+'">'+money(Math.max(0,d-p))+'</td></tr>'}).join('');$('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>المستحق: <b>'+money(due)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b class="red">'+money(Math.max(0,due-paid))+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
+function showAnnual(){const y=$('accYear').value, ms=months(36).filter(x=>x.startsWith(y)).reverse();let inc=0,exp=0;const rows=ms.map(m=>{const t=totals(m);inc+=t.inc;exp+=t.exp;return '<tr><td>'+fmtMonth(m)+'</td><td>'+money(t.open)+'</td><td class="green">'+money(t.inc)+'</td><td class="red">'+money(t.exp)+'</td><td>'+money(t.close)+'</td></tr>'}).join('');$('accAnnual').innerHTML='<div class="notice">إجمالي الإيرادات: <b class="green">'+money(inc)+'</b> — إجمالي المصروفات: <b class="red">'+money(exp)+'</b> — صافي الحركة: <b>'+money(inc-exp)+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الافتتاحي</th><th>الإيرادات</th><th>المصروفات</th><th>الختامي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
+function reconcileAcc(){const b=Number($('accBookCash').value||0),a=Number($('accActualCash').value||0),d=a-b;$('accReconcile').innerHTML='<div class="'+(Math.abs(d)<0.005?'ok':'danger')+'">الفرق بين الرصيد الفعلي والدفتري: <b>'+money(d)+'</b></div>'}
+function renderAll(){renderDashboard();renderTransactions();renderResidents();renderFunders();renderSuppliers();renderGate();renderReport();renderCats();renderAccounting()}
 function openModal(){ $('modal').classList.add('show') }
 function closeModal(){ $('modal').classList.remove('show'); $('sheet').innerHTML='' }
 $('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
@@ -504,7 +482,7 @@ function openNewIncome(){
 function saveNewIncome(){
  const amount=Number($('incomeAmount')?.value||0),date=$('fDate').value||today(),kind=$('incomeKind').value,note=$('fNote').value.trim();
  if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
- let o={id:uid(),date,month:date.slice(0,7),type:'income',label:'إيراد',amount,note,unit:'',residentId:'',residentName:'',funderId:'',funderName:''};
+ let o={id:uid(),date,month:date.slice(0,7),type:'income',label:'إيراد',amount,note,unit:'',residentId:'',residentName:'',funderId:'',funderName:'',supplierId:'',supplierName:'',paymentMethod:'نقدي',voucherNo:'قبض-'+String(db.tx.filter(x=>x.type==='income').length+1).padStart(5,'0')};
  if(kind==='subscription'){
    const r=db.residents.find(x=>x.id===$('incomeResident').value);if(!r)return alert('اختر الساكن');
    o.label='اشتراك شهري';o.unit=String(r.unit);o.residentId=r.id;o.residentName=String(r.name||'بدون اسم');o.note=note||('تحصيل اشتراك شهري — '+o.residentName+' — وحدة '+o.unit);
@@ -520,7 +498,7 @@ function openNewExpense(){
  const date=$('newOpDate').value||today(),note=$('newOpNote').value.trim();
  $('sheet').innerHTML='<h2>إضافة مصروف</h2><label>مسمى المصروف</label><div class="row"><select id="expenseKind">'+db.categories.expense.map(c=>'<option value="'+escapeAttr(c)+'">'+escapeHtml(c)+'</option>').join('')+'</select><button class="neutral" id="addExpenseCat">＋ مسمى جديد</button></div><label>المبلغ</label><input id="expenseAmount" type="number" min="0" step="0.01" inputmode="decimal"><label>التاريخ</label><input id="expenseDate" type="date" value="'+escapeAttr(date)+'"><label>وصف العملية</label><input id="expenseNote" value="'+escapeAttr(note)+'"><div class="row" style="margin-top:12px"><button class="primary" id="saveExpense">حفظ المصروف</button><button class="neutral" id="cancelExpense">إلغاء</button></div>';
  $('addExpenseCat').onclick=()=>{const n=prompt('اكتب مسمى المصروف الجديد:');if(!n)return;const v=n.trim();if(!v)return;if(!db.categories.expense.includes(v)){db.categories.expense.push(v);save();}openNewExpense()};
- $('saveExpense').onclick=()=>{const amount=Number($('expenseAmount').value||0),date=$('expenseDate').value||today();if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');db.tx.push({id:uid(),date,month:date.slice(0,7),type:'expense',label:$('expenseKind').value,amount,note:$('expenseNote').value.trim(),unit:'',residentId:'',residentName:'',funderId:'',funderName:''});save();closeModal();renderAll();show('transactions',$('nav').querySelector('[data-section="transactions"]'))};
+ $('saveExpense').onclick=()=>{const amount=Number($('expenseAmount').value||0),date=$('expenseDate').value||today();if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');db.tx.push({id:uid(),date,month:date.slice(0,7),type:'expense',label:$('expenseKind').value,amount,note:$('expenseNote').value.trim(),unit:'',residentId:'',residentName:'',funderId:'',funderName:'',supplierId:$('expenseSupplier')?.value||'',supplierName:(db.suppliers.find(x=>x.id===($('expenseSupplier')?.value||''))?.name||''),paymentMethod:$('expensePayMethod')?.value||'نقدي',voucherNo:'صرف-'+String(db.tx.filter(x=>x.type==='expense').length+1).padStart(5,'0')});save();closeModal();renderAll();show('transactions',$('nav').querySelector('[data-section="transactions"]'))};
  $('cancelExpense').onclick=closeModal;openModal();
 }
 
@@ -545,16 +523,16 @@ function saveTx(type,id){
  const amount=Number($('fAmount').value||0),date=$('fDate').value;
  if(!date)return alert('اختر التاريخ');
  if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
- const o={id:id||uid(),date,month:date.slice(0,7),type,label:$('fCat').value,amount,note:$('fNote').value.trim(),unit:id?(db.tx.find(x=>x.id===id)?.unit||''):''};
+ const oldTx=id?db.tx.find(x=>x.id===id):null; const o={id:id||uid(),date,month:date.slice(0,7),type,label:$('fCat').value,amount,note:$('fNote').value.trim(),unit:oldTx?.unit||'',residentId:oldTx?.residentId||'',residentName:oldTx?.residentName||'',funderId:oldTx?.funderId||'',funderName:oldTx?.funderName||'',supplierId:oldTx?.supplierId||'',supplierName:oldTx?.supplierName||'',paymentMethod:oldTx?.paymentMethod||'نقدي',voucherNo:oldTx?.voucherNo||((type==='income'?'قبض-':'صرف-')+String(db.tx.filter(x=>x.type===type).length+1).padStart(5,'0'))};
  if(id)db.tx=db.tx.map(x=>x.id===id?o:x);else db.tx.push(o);
  save();closeModal();renderAll();
 }
 function openOpening(){
  const m=$('dashMonth').value||currentMonth();
- $('sheet').innerHTML='<h2>رصيد بداية '+fmtMonth(m)+'</h2><div class="notice">يمكنك تحديد رصيد افتتاحي مستقل لهذا الشهر. إذا تركت الشهر بلا قيمة، سيُرحّل رصيد الشهر السابق تلقائيًا.</div>'+
+ $('sheet').innerHTML='<h2>إضافة رصيد افتتاحي</h2><label>اختر الشهر</label><select id="openingMonth">'+months(60).map(mm=>'<option value="'+mm+'"'+(mm===m?' selected':'')+'>'+fmtMonth(mm)+'</option>').join('')+'</select><div class="notice">يمكنك تحديد رصيد افتتاحي مستقل لهذا الشهر. إذا تركت الشهر بلا قيمة، سيُرحّل رصيد الشهر السابق تلقائيًا.</div>'+
  '<input id="openingAmt" type="number" step="0.01" value="'+(Object.prototype.hasOwnProperty.call(db.opening,m)?db.opening[m]:'')+'" placeholder="الرصيد الافتتاحي">'+
  '<div class="row" style="margin-top:12px"><button class="primary" id="saveOpening">حفظ</button><button class="neutral" id="clearOpening">إلغاء التحديد</button></div>';
- $('saveOpening').onclick=()=>{const v=$('openingAmt').value.trim();if(v==='')delete db.opening[m];else db.opening[m]=Number(v||0);save();closeModal();renderAll()};
+ $('openingMonth').onchange=()=>{const mm=$('openingMonth').value;$('openingAmt').value=Object.prototype.hasOwnProperty.call(db.opening,mm)?db.opening[mm]:''};$('saveOpening').onclick=()=>{const mm=$('openingMonth').value,v=$('openingAmt').value.trim();if(v==='')delete db.opening[mm];else db.opening[mm]=Number(v||0);save();closeModal();renderAll()};
  $('clearOpening').onclick=()=>{delete db.opening[m];save();closeModal();renderAll()};
  openModal();
 }
@@ -603,7 +581,7 @@ function payResident(id){
    const amount=Number($('payAmount').value||0),date=$('payDate').value;
    if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
    if(!date)return alert('اختر التاريخ');
-   db.tx.push({id:uid(),date,month:date.slice(0,7),type:'income',label:'اشتراك شهري — '+residentName,unit:r.unit,residentId:r.id,residentName,amount,note:$('payNote').value.trim()});
+   db.tx.push({id:uid(),date,month:date.slice(0,7),type:'income',label:'اشتراك شهري — '+residentName,unit:r.unit,residentId:r.id,residentName,amount,note:$('payNote').value.trim(),paymentMethod:'نقدي',voucherNo:'قبض-'+String(db.tx.filter(x=>x.type==='income').length+1).padStart(5,'0')});
    save();closeModal();renderAll();
  };
  $('cancelPay').onclick=closeModal;openModal();
@@ -628,7 +606,7 @@ function saveGate(kind){
  }
  save();closeModal();renderAll();
 }
-function deleteTx(id){if(!confirm('حذف العملية؟ سيتم إعادة احتساب الأرصدة.'))return;db.tx=db.tx.filter(x=>x.id!==id);save();renderAll()}
+function deleteTx(id){const x=db.tx.find(z=>z.id===id);if(!x)return;if(!confirm('سيتم إلغاء العملية مع الاحتفاظ بها في سجل المراجعة. هل تريد المتابعة؟'))return;x.voided=true;x.voidedAt=new Date().toISOString();save();renderAll()}
 function deleteGate(id){
  const x=db.gate.ops.find(z=>z.id===id);if(!x)return;
  if(x.kind==='repay'){/* allow deletion */}
@@ -672,6 +650,12 @@ $('newOpDate').value=today();
 $('newIncomeBtn').onclick=openNewIncome;
 $('newExpenseBtn').onclick=openNewExpense;
 $('addFunder').onclick=()=>openFunder();
+if($('addSupplier'))$('addSupplier').onclick=()=>openSupplier();
+if($('accMonth'))$('accMonth').onchange=renderAccounting;
+if($('accResidentBtn'))$('accResidentBtn').onclick=showAccResident;
+if($('accAnnualBtn'))$('accAnnualBtn').onclick=showAnnual;
+if($('accReconcileBtn'))$('accReconcileBtn').onclick=reconcileAcc;
+
 $('filterMonth').onchange=renderTransactions;
 $('filterType').onchange=renderTransactions;
 $('residentMonth').onchange=renderResidents;
@@ -688,6 +672,7 @@ $('resetBtn').onclick=()=>{if(confirm('سيتم حذف كل بيانات هذا 
 
 nav();
 setSelects(currentMonth());
+fillSelect('accMonth',currentMonth());
 renderAll();
 
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
