@@ -193,6 +193,10 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 </div>
 <input id="importFile" type="file" accept=".json,application/json" style="display:none">
 <hr>
+<h2>فحص واستعادة البيانات المحلية</h2>
+<div class="notice">هذا الفحص لا يحذف ولا يغيّر أي بيانات. يبحث في مخزن الموقع الحالي عن قواعد بيانات قديمة أو مفاتيح أخرى تحتوي على سكان أو عمليات أو أرصدة، ثم يتيح حفظ نسخة احتياطية قبل أي استعادة.</div>
+<div class="row no-print"><button class="goldbtn" id="scanDataBtn">🔎 فحص البيانات الموجودة</button><button class="neutral" id="backupRawBtn">💾 حفظ نسخة خام من التخزين</button></div>
+<div id="dataScanResult" style="margin-top:10px"></div><hr>
 <h2>مسميات الإيرادات والمصروفات</h2>
 <div class="row">
 <div><label>الإيرادات</label><div id="incomeCats"></div></div>
@@ -218,6 +222,7 @@ const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'
 const today=()=>new Date().toISOString().slice(0,10);
 const currentMonth=()=>today().slice(0,7);
 const ar=n=>Number(n||0).toLocaleString('ar-EG');
+const money=n=>ar(n)+' ج.م';
 
 const defaultCats={
  income:['اشتراك شهري','متأخرات','إيراد خدمات','إيراد آخر'],
@@ -616,6 +621,65 @@ function deleteGate(id){
  }
  save();renderAll();
 }
+function inspectCandidate(key,raw){
+  const out={key,size:raw.length,kind:'unknown',score:0,data:null};
+  try{
+    const v=JSON.parse(raw); out.data=v;
+    const d=v&&v.data&&typeof v.data==='object'?v.data:v;
+    if(d&&typeof d==='object'){
+      if(Array.isArray(d.residents)){out.score+=5;out.residents=d.residents.length}
+      if(Array.isArray(d.tx)){out.score+=5;out.tx=d.tx.length}
+      if(d.opening&&typeof d.opening==='object'){out.score+=3;out.opening=Object.keys(d.opening).length}
+      if(d.gate&&Array.isArray(d.gate.ops)){out.score+=2;out.gateOps=d.gate.ops.length}
+      if(d.categories&&typeof d.categories==='object'){out.score+=1}
+      if(v&&v.app==='حسابات برج مكة')out.score+=5;
+      if(out.score>=5)out.kind='حسابات برج مكة محتملة';
+    }
+  }catch(e){out.kind='نص غير JSON'}
+  return out;
+}
+function scanLocalData(){
+  const hits=[];
+  for(let i=0;i<localStorage.length;i++){
+    const k=localStorage.key(i); if(!k)continue;
+    let raw=''; try{raw=localStorage.getItem(k)||''}catch(e){continue}
+    const c=inspectCandidate(k,raw);
+    if(c.score>0 || k===KEY)hits.push(c);
+  }
+  hits.sort((a,b)=>b.score-a.score || b.size-a.size);
+  return hits;
+}
+function renderDataScan(){
+  const box=$('dataScanResult'); if(!box)return;
+  const hits=scanLocalData();
+  if(!hits.length){box.innerHTML='<div class="danger">لم يتم العثور على مفتاح آخر يحتوي على بنية بيانات محاسبية معروفة في نطاق الموقع الحالي. لم يتم حذف أو تعديل أي شيء.</div>';return}
+  box.innerHTML='<div class="ok">تم العثور على '+ar(hits.length)+' مرشح/مرشحين. البيانات الأصلية لم تُلمس.</div>'+hits.map((h,i)=>{
+    const same=h.key===KEY;
+    const d=h.data&&h.data.data&&typeof h.data.data==='object'?h.data.data:h.data||{};
+    return `<div class="card" style="margin-top:8px;border:1px solid ${same?'#b9e3c8':'#e5edf2'}"><div><b>${escapeHtml(h.key)}</b> ${same?'<span class="badge">المفتاح الحالي</span>':''}</div><div class="small">الحجم: ${ar(h.size)} بايت — السكان: ${ar(h.residents||0)} — العمليات: ${ar(h.tx||0)} — أرصدة افتتاحية: ${ar(h.opening||0)} — عمليات البواب: ${ar(h.gateOps||0)}</div><div class="row no-print" style="margin-top:8px">${!same&&h.score>=5?`<button class="primary" onclick="recoverLocalKey(${JSON.stringify(h.key)})">استعادة هذه البيانات</button>`:''}<button class="neutral" onclick="downloadLocalKey(${JSON.stringify(h.key)})">حفظ نسخة هذا المفتاح</button></div></div>`
+  }).join('');
+}
+function downloadLocalKey(key){
+  const raw=localStorage.getItem(key); if(raw===null){alert('لم تعد البيانات موجودة تحت هذا المفتاح.');return}
+  const payload={app:'حسابات برج مكة — نسخة خام من التخزين',key,exportedAt:new Date().toISOString(),raw};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='استعادة-برج-مكة-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function backupRawStorage(){
+  const all={}; for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)all[k]=localStorage.getItem(k)}
+  const payload={app:'حسابات برج مكة — نسخة خام كاملة',exportedAt:new Date().toISOString(),storage:all};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='برج-مكة-تخزين-خام-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function recoverLocalKey(key){
+  const raw=localStorage.getItem(key); if(raw===null){alert('البيانات لم تعد موجودة.');return}
+  let parsed; try{parsed=JSON.parse(raw)}catch(e){alert('هذا المفتاح ليس ملف بيانات JSON صالحًا.');return}
+  const incoming=parsed&&parsed.data&&typeof parsed.data==='object'?parsed.data:parsed;
+  if(!incoming||typeof incoming!=='object'||(!Array.isArray(incoming.residents)&&!Array.isArray(incoming.tx)&&!incoming.opening)){alert('لم أجد بنية محاسبية قابلة للاستعادة في هذا المفتاح.');return}
+  const currentRaw=localStorage.getItem(KEY)||'';
+  const backupKey=KEY+'__before_recovery_'+Date.now();
+  try{localStorage.setItem(backupKey,currentRaw)}catch(e){alert('تعذر إنشاء نسخة أمان محلية. استخدم حفظ نسخة هذا المفتاح أولًا.');return}
+  if(!confirm('سيتم استبدال البيانات الحالية ببيانات هذا المفتاح بعد حفظ نسخة أمان محلية. هل تريد الاستعادة؟')){localStorage.removeItem(backupKey);return}
+  try{const migrated=migrate(incoming);localStorage.setItem(KEY,JSON.stringify(migrated));alert('تمت الاستعادة. نسخة البيانات الحالية السابقة محفوظة محليًا باسم '+backupKey);location.reload()}catch(e){alert('فشلت الاستعادة ولم يتم تغيير البيانات الحالية.')} 
+}
 function exportData(){
  const payload={app:'حسابات برج مكة',schemaVersion:VERSION,exportedAt:new Date().toISOString(),data:db};
  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
@@ -669,6 +733,8 @@ $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''};
 $('resetBtn').onclick=()=>{if(confirm('سيتم حذف كل بيانات هذا الجهاز. تأكد أنك تملك نسخة احتياطية. هل تريد المتابعة؟')){localStorage.removeItem(KEY);location.reload()}};
 
+if($('scanDataBtn'))$('scanDataBtn').onclick=renderDataScan;
+if($('backupRawBtn'))$('backupRawBtn').onclick=backupRawStorage;
 nav();
 setSelects(currentMonth());
 fillSelect('accMonth',currentMonth());
