@@ -180,7 +180,7 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 <section id="settings">
 <div class="card">
 <h2>الإعدادات والبيانات</h2>
-<div class="notice">هذه النسخة تستخدم ترحيلًا آمنًا للبيانات القديمة. تغيير اسم فئة لا يغيّر وصف العمليات السابقة. كما يمكن تصدير نسخة احتياطية واستيرادها.</div>
+<div class="notice">هذه النسخة تستخدم ترحيلًا آمنًا للبيانات القديمة.<br><b>قبل أي تحديث:</b> صدّر نسخة احتياطية من بياناتك واحتفظ بها خارج الهاتف. تغيير اسم فئة لا يغيّر وصف العمليات السابقة. كما يمكن تصدير نسخة احتياطية واستيرادها.</div>
 <div class="row no-print">
 <button class="neutral" id="exportBtn">تصدير نسخة احتياطية</button>
 <button class="primary" id="importBtn">استيراد نسخة احتياطية</button>
@@ -214,6 +214,60 @@ const today=()=>new Date().toISOString().slice(0,10);
 const currentMonth=()=>today().slice(0,7);
 const ar=n=>Number(n||0).toLocaleString('ar-EG');
 const money=n=>ar(n)+' ج.م';
+
+
+function safeMigrateData(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(!raw)return;
+    const d=JSON.parse(raw);
+    if(!d || typeof d!=='object')return;
+
+    // Preserve every existing field and only add missing structures.
+    if(!Array.isArray(d.tx))d.tx=[];
+    if(!Array.isArray(d.residents))d.residents=[];
+    if(!Array.isArray(d.funders))d.funders=[];
+    if(!Array.isArray(d.suppliers))d.suppliers=[];
+    if(!d.gate || typeof d.gate!=='object')d.gate={salary:0,ops:[]};
+    if(!Array.isArray(d.gate.ops))d.gate.ops=[];
+    if(!d.opening || typeof d.opening!=='object')d.opening={};
+    if(!d.categories || typeof d.categories!=='object')d.categories={};
+    if(!Array.isArray(d.categories.income))d.categories.income=[];
+    if(!Array.isArray(d.categories.expense))d.categories.expense=[];
+
+    d.residents=d.residents.map(r=>{
+      const x={...r};
+      if(!x.id)x.id=uid();
+      if(x.name==null && x.residentName!=null)x.name=String(x.residentName);
+      x.name=String(x.name||'');
+      x.unit=String(x.unit||'');
+      if(x.active===undefined)x.active=true;
+      if(!Array.isArray(x.feeHistory))x.feeHistory=[];
+      return x;
+    });
+
+    d.funders=d.funders.map(x=>({...x,id:x.id||uid(),name:String(x.name||''),active:x.active!==false}));
+    d.suppliers=d.suppliers.map(x=>({...x,id:x.id||uid(),name:String(x.name||''),active:x.active!==false}));
+
+    d.tx=d.tx.map(x=>{
+      const t={...x};
+      if(!t.id)t.id=uid();
+      t.amount=Number(t.amount||0);
+      t.date=t.date||today();
+      t.month=t.month||(t.date||today()).slice(0,7);
+      t.type=t.type==='expense'?'expense':'income';
+      t.voided=!!t.voided;
+      return t;
+    });
+
+    d.schemaVersion=Math.max(Number(d.schemaVersion||1),VERSION);
+    localStorage.setItem(KEY,JSON.stringify(d));
+  }catch(e){
+    // Never overwrite or delete the user's existing data on migration failure.
+    console.error('Safe migration failed; existing data left untouched.',e);
+  }
+}
+safeMigrateData();
 
 const defaultCats={
  income:['اشتراك شهري','متأخرات','إيراد خدمات','إيراد آخر'],
