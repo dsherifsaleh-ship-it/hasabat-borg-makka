@@ -22,7 +22,7 @@ section{display:none}.active-section{display:block}
 .card{background:#fff;border-radius:18px;padding:16px;box-shadow:0 2px 12px #173b5d12;margin-bottom:12px}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .label{font-size:13px;color:#6a7b89}.value{font-size:22px;font-weight:900;margin-top:5px}
-.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.gold{color:var(--gold)}.dark{color:#183044}
+.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.gold{color:var(--gold)}.dark{color:#183044}.amount-positive{color:var(--green)!important}.amount-negative{color:var(--red)!important}.amount-zero{color:#183044!important}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
 input,select,textarea{width:100%;padding:12px;border:1px solid #d8e1e8;border-radius:11px;background:#fff;font-size:16px;font-family:inherit}
 textarea{min-height:80px}
@@ -149,6 +149,7 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 <button class="primary no-print" id="addResident">＋ إضافة ساكن/وحدة</button>
 <div class="row" style="margin-top:10px"><div><label>شهر المتابعة</label><select id="residentMonth"></select></div></div>
 <div style="overflow:auto;margin-top:10px"><table class="residents-table"><thead><tr><th>الوحدة</th><th>الاسم</th><th>الاشتراك</th><th>المطلوب</th><th>المحصل</th><th>المتبقي</th><th></th></tr></thead><tbody id="resBody"></tbody></table></div>
+<hr><h3>كشف أرصدة السكان</h3><div class="notice">يوضح الرصيد السابق حتى نهاية الشهر السابق، ومستحق الشهر، وما تم تحصيله، ثم الرصيد الحالي لكل ساكن.</div><div style="overflow:auto"><table><thead><tr><th>الوحدة</th><th>الساكن</th><th>الرصيد السابق</th><th>مستحق الشهر</th><th>المحصل</th><th>الرصيد الحالي</th></tr></thead><tbody id="resBalancesBody"></tbody></table></div>
 </div>
 </section>
 
@@ -222,7 +223,8 @@ const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'
 const today=()=>new Date().toISOString().slice(0,10);
 const currentMonth=()=>today().slice(0,7);
 const ar=n=>Number(n||0).toLocaleString('ar-EG');
-const money=n=>ar(n)+' ج.م';
+const moneyText=n=>ar(n)+' ج.م';
+const money=n=>{const v=Number(n||0);const cls=v>0?'amount-positive':v<0?'amount-negative':'amount-zero';return '<span class="'+cls+'">'+ar(v)+' ج.م</span>';};
 
 const defaultCats={
  income:['اشتراك شهري','متأخرات','إيراد خدمات','إيراد آخر'],
@@ -347,10 +349,10 @@ function show(id,btn){
 }
 function renderDashboard(){
  const m=$('dashMonth').value||currentMonth(),t=totals(m);
- $('openingValue').textContent=money(t.open);
- $('incomeTotal').textContent=money(t.inc);
- $('expenseTotal').textContent=money(t.exp);
- $('closingValue').textContent=money(t.close);
+ $('openingValue').innerHTML=money(t.open);
+ $('incomeTotal').innerHTML=money(t.inc);
+ $('expenseTotal').innerHTML=money(t.exp);
+ $('closingValue').innerHTML=money(t.close);
  $('cashExtra').innerHTML='حركة السلف في '+fmtMonth(m)+': صرف سلف <b>'+money(t.adv)+'</b> — سداد سلف <b>'+money(t.rep)+'</b>. هذه الحركات تؤثر على النقدية ولا تدخل ضمن الإيرادات والمصروفات التشغيلية.';
 }
 function renderTransactions(){
@@ -398,23 +400,46 @@ function funderOptions(includeResidents=true){
  return out;
 }
 
+function residentStartMonth(r){
+ const hist=Array.isArray(r.feeHistory)?r.feeHistory.filter(h=>h&&h.month).map(h=>String(h.month)).sort():[];
+ return hist[0]||currentMonth();
+}
+function residentPaidThrough(r,m){
+ return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month<=m&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
+}
+function residentDueThrough(r,m){
+ const start=residentStartMonth(r);
+ return months(60).filter(mm=>mm>=start&&mm<=m).reduce((s,mm)=>s+residentFee(r,mm),0);
+}
+function renderResidentBalances(m){
+ const rows=db.residents.filter(r=>r.active!==false).map(r=>{
+   const fee=residentFee(r,m),paid=paidFor(r,m);
+   const prevM=months(60).filter(mm=>mm<m).sort().pop();
+   const previous=prevM?(residentDueThrough(r,prevM)-residentPaidThrough(r,prevM)):0;
+   const current=previous+fee-paid;
+   const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(safeName)+'</td><td>'+money(previous)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(current)+'</td></tr>';
+ }).join('');
+ if($('resBalancesBody'))$('resBalancesBody').innerHTML=rows||'<tr><td colspan="6">لا توجد وحدات نشطة.</td></tr>';
+}
 function renderResidents(){
  const m=$('residentMonth').value||currentMonth();
  $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
-   const fee=residentFee(r,m),paid=paidFor(r,m),remain=Math.max(0,fee-paid);
+   const fee=residentFee(r,m),paid=paidFor(r,m),remain=fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
    return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="resident-actions"><button class="income pay-res" data-id="'+r.id+'">تحصيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td class="green">'+money(paid)+'</td><td class="'+(remain?'red':'green')+'">'+money(remain)+'</td><td></td></tr>';
  }).join('')||'<tr><td colspan="7">لا توجد وحدات نشطة.</td></tr>';
+ renderResidentBalances(m);
  document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
  document.querySelectorAll('.edit-res').forEach(b=>b.onclick=()=>openResident(b.dataset.id));
 }
 function renderGate(){
  const a=db.gate.ops.filter(x=>x.kind==='advance').reduce((s,x)=>s+x.amount,0);
  const r=db.gate.ops.filter(x=>x.kind==='repay').reduce((s,x)=>s+x.amount,0);
- $('salaryValue').textContent=money(db.gate.salary);
- $('advanceValue').textContent=money(a);
- $('repaidValue').textContent=money(r);
- $('advanceBalance').textContent=money(Math.max(0,a-r));
+ $('salaryValue').innerHTML=money(db.gate.salary);
+ $('advanceValue').innerHTML=money(a);
+ $('repaidValue').innerHTML=money(r);
+ $('advanceBalance').innerHTML=money(a-r);
  $('gateBody').innerHTML=db.gate.ops.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>
  '<tr><td>'+x.date+'</td><td>'+({advance:'سلفة',repay:'سداد سلفة',salary:'صرف مرتب'}[x.kind]||'عملية')+'</td><td>'+money(x.amount)+'</td><td><button class="expense del-gate" data-id="'+x.id+'">حذف</button></td></tr>'
  ).join('')||'<tr><td colspan="4">لا توجد عمليات.</td></tr>';
@@ -436,7 +461,7 @@ function renderReport(){
 }
 function reportTable(arr,c){
  return arr.length?'<table class="print-table"><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>'+
- arr.map(x=>'<tr><td>'+x.date+'</td><td>'+escapeHtml(x.label)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+'</td><td class="'+c+'">'+money(x.amount)+'</td></tr>').join('')+'</tbody></table>':'<div class="small">لا توجد عمليات.</div>';
+ arr.map(x=>{const desc=(c==='red'?(String(x.note||'').trim()||x.label):x.label);return '<tr><td>'+x.date+'</td><td>'+escapeHtml(desc)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+'</td><td>'+money(x.amount)+'</td></tr>'}).join('')+'</tbody></table>':'<div class="small">لا توجد عمليات.</div>';
 }
 function renderCats(){
  ['income','expense'].forEach(k=>{
@@ -453,13 +478,13 @@ function renderCats(){
 }
 function renderAccounting(){
  const m=$('accMonth')?.value||currentMonth(), t=totals(m);
- if($('accDue')){let due=0,paid=0;db.residents.filter(r=>r.active!==false).forEach(r=>{due+=residentFee(r,m);paid+=paidFor(r,m)});$('accDue').textContent=money(due);$('accCollected').textContent=money(paid);$('accExpenses').textContent=money(t.exp);$('accCash').textContent=money(t.close);$('accBookCash').value=t.close;}
+ if($('accDue')){let due=0,paid=0;db.residents.filter(r=>r.active!==false).forEach(r=>{due+=residentFee(r,m);paid+=paidFor(r,m)});$('accDue').innerHTML=money(due);$('accCollected').innerHTML=money(paid);$('accExpenses').innerHTML=money(t.exp);$('accCash').innerHTML=money(t.close);$('accBookCash').value=t.close;}
  if($('accResident'))$('accResident').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>'<option value="'+r.id+'">'+escapeHtml(r.name||'بدون اسم')+' — وحدة '+escapeHtml(r.unit)+'</option>').join('');
- const rows=db.residents.filter(r=>r.active!==false).map(r=>{const due=residentFee(r,m),paid=paidFor(r,m),rem=Math.max(0,due-paid);return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>'+money(due)+'</td><td class="green">'+money(paid)+'</td><td class="'+(rem?'red':'green')+'">'+money(rem)+'</td></tr>'}).join('');
+ const rows=db.residents.filter(r=>r.active!==false).map(r=>{const due=residentFee(r,m),paid=paidFor(r,m),rem=due-paid;return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>'+money(due)+'</td><td class="green">'+money(paid)+'</td><td class="'+(rem?'red':'green')+'">'+money(rem)+'</td></tr>'}).join('');
  if($('accArrearsBody'))$('accArrearsBody').innerHTML=rows||'<tr><td colspan="5">لا يوجد سكان.</td></tr>';
  const years=[...new Set(months(36).map(x=>x.slice(0,4)))];if($('accYear'))$('accYear').innerHTML=years.map(y=>'<option>'+y+'</option>').join('');
 }
-function showAccResident(){const r=db.residents.find(x=>x.id===$('accResident').value),m=$('accMonth').value||currentMonth();if(!r)return;const ms=months(36).slice().reverse().filter(x=>x<=m);let due=0,paid=0;const rows=ms.map(mm=>{const d=residentFee(r,mm),p=paidFor(r,mm);due+=d;paid+=p;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(d)+'</td><td class="green">'+money(p)+'</td><td class="'+(d-p>0?'red':'green')+'">'+money(Math.max(0,d-p))+'</td></tr>'}).join('');$('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>المستحق: <b>'+money(due)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b class="red">'+money(Math.max(0,due-paid))+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
+function showAccResident(){const r=db.residents.find(x=>x.id===$('accResident').value),m=$('accMonth').value||currentMonth();if(!r)return;const ms=months(36).slice().reverse().filter(x=>x<=m);let due=0,paid=0;const rows=ms.map(mm=>{const d=residentFee(r,mm),p=paidFor(r,mm);due+=d;paid+=p;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(d)+'</td><td class="green">'+money(p)+'</td><td class="'+(d-p>0?'red':'green')+'">'+money(Math.max(0,d-p))+'</td></tr>'}).join('');$('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>المستحق: <b>'+money(due)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b class="red">'+money(due-paid)+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
 function showAnnual(){const y=$('accYear').value, ms=months(36).filter(x=>x.startsWith(y)).reverse();let inc=0,exp=0;const rows=ms.map(m=>{const t=totals(m);inc+=t.inc;exp+=t.exp;return '<tr><td>'+fmtMonth(m)+'</td><td>'+money(t.open)+'</td><td class="green">'+money(t.inc)+'</td><td class="red">'+money(t.exp)+'</td><td>'+money(t.close)+'</td></tr>'}).join('');$('accAnnual').innerHTML='<div class="notice">إجمالي الإيرادات: <b class="green">'+money(inc)+'</b> — إجمالي المصروفات: <b class="red">'+money(exp)+'</b> — صافي الحركة: <b>'+money(inc-exp)+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الافتتاحي</th><th>الإيرادات</th><th>المصروفات</th><th>الختامي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
 function reconcileAcc(){const b=Number($('accBookCash').value||0),a=Number($('accActualCash').value||0),d=a-b;$('accReconcile').innerHTML='<div class="'+(Math.abs(d)<0.005?'ok':'danger')+'">الفرق بين الرصيد الفعلي والدفتري: <b>'+money(d)+'</b></div>'}
 function renderAll(){renderDashboard();renderTransactions();renderResidents();renderFunders();renderSuppliers();renderGate();renderReport();renderCats();renderAccounting()}
@@ -576,7 +601,7 @@ function saveResident(id,effectiveMonth){
 function payResident(id){
  const r=db.residents.find(x=>x.id===id),m=$('residentMonth').value||currentMonth(),fee=residentFee(r,m),paid=paidFor(r,m);
  const residentName=(r&&r.name!==undefined&&r.name!==null&&String(r.name).trim()!==''&&String(r.name).trim().toLowerCase()!=='undefined')?String(r.name).trim():'بدون اسم';
- $('sheet').innerHTML='<h2>تحصيل من شقة '+escapeHtml(r.unit)+'</h2><div class="notice"><b>اسم الساكن: '+escapeHtml(residentName)+'</b><br>الوحدة: <b>'+escapeHtml(r.unit)+'</b><br>المطلوب في '+fmtMonth(m)+': <b>'+money(fee)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b>'+money(Math.max(0,fee-paid))+'</b></div>'+
+ $('sheet').innerHTML='<h2>تحصيل من شقة '+escapeHtml(r.unit)+'</h2><div class="notice"><b>اسم الساكن: '+escapeHtml(residentName)+'</b><br>الوحدة: <b>'+escapeHtml(r.unit)+'</b><br>المطلوب في '+fmtMonth(m)+': <b>'+money(fee)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b>'+money(fee-paid)+'</b></div>'+
  '<label>المبلغ المدفوع</label><input id="payAmount" type="number" min="0" step="0.01" inputmode="decimal" value="'+Math.max(0,fee-paid)+'">'+
  '<label>التاريخ</label><input id="payDate" type="date" value="'+today()+'">'+
  '<label>البيان</label><input id="payNote" value="تحصيل من ساكن">'+
