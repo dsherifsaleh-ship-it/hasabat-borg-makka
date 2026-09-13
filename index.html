@@ -453,7 +453,7 @@ function renderResidents(){
  $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
    const fee=residentFee(r,m),paid=paidFor(r,m),remain=fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
-   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="income pay-res" data-id="'+r.id+'">تحصيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
+   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="resident-actions"><button class="pay-res collection-status '+(paidStatus?'paid':'unpaid')+'" data-id="'+r.id+'">تحصيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
  }).join('')||'<tr><td colspan="7">لا توجد وحدات نشطة.</td></tr>';
  renderResidentBalances(m);
  document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
@@ -489,7 +489,8 @@ function renderReport(){
 function residentStatusReport(m){
  const rows=db.residents.filter(r=>r.active!==false).map(r=>{
    const paid=residentPaidStatus(r,m);
-   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td><span class="status-dot '+(paid?'paid':'unpaid')+'"></span>'+ (paid?'مسدد':'غير مسدد') +'</td></tr>';
+   const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td><span class="status-dot '+(paid?'paid':'unpaid')+'"></span>'+escapeHtml(safeName)+'</td><td>'+ (paid?'مسدد':'غير مسدد') +'</td></tr>';
  }).join('');
  return '<table class="print-table"><thead><tr><th>الوحدة</th><th>الساكن</th><th>حالة الاشتراك</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="3">لا يوجد سكان.</td></tr>') +'</tbody></table>';
 }
