@@ -44,7 +44,7 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;ove
 .residents-table .actions{display:none}
 .resident-actions{display:flex;gap:4px;margin-top:6px}
 .resident-actions button{flex:1;padding:6px 4px;font-size:11px}
-.resident-name{font-weight:800;font-size:15px;line-height:1.45}
+.resident-name{font-weight:800;font-size:15px;line-height:1.45}.collection-status{font-size:11px;font-weight:900;margin-top:3px}.collection-status.paid{color:var(--green)}.collection-status.unpaid{color:var(--red)}.status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-left:5px}.status-dot.paid{background:var(--green)}.status-dot.unpaid{background:var(--red)}.amount-positive{color:var(--green)}.amount-negative{color:var(--red)}.amount-zero{color:#71818d}
 .resident-unit{font-weight:900}
 @media(max-width:480px){
  .residents-table th,.residents-table td{font-size:11px}
@@ -174,7 +174,7 @@ header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{bo
 </div>
 </section>
 
-<section id="accounting"><div class="card"><h2>الحسابات والتقارير المحاسبية</h2><div class="notice">القاعدة المحاسبية: الرصيد الافتتاحي يُرحّل من الرصيد النهائي للشهر السابق. الاستثناء الوحيد هو رصيد افتتاحي يدوي تحدده أنت لشهر معين.</div><div class="row"><div><label>الشهر</label><select id="accMonth"></select></div><div><label>السنة</label><select id="accYear"></select></div></div><div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">المستحق على السكان</div><div id="accDue" class="value red">٠ ج.م</div></div><div class="kpi"><div class="label">المحصل</div><div id="accCollected" class="value green">٠ ج.م</div></div><div class="kpi"><div class="label">المصروفات</div><div id="accExpenses" class="value red">٠ ج.م</div></div><div class="kpi"><div class="label">رصيد الخزينة</div><div id="accCash" class="value blue">٠ ج.م</div></div></div><hr><h3>المتأخرات</h3><div style="overflow:auto"><table><thead><tr><th>الوحدة</th><th>الساكن</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th></tr></thead><tbody id="accArrearsBody"></tbody></table></div><hr><h3>كشف حساب ساكن</h3><div class="row"><div><label>الساكن</label><select id="accResident"></select></div><div style="display:flex;align-items:end"><button class="primary" id="accResidentBtn">عرض الكشف</button></div></div><div id="accResidentStatement"></div><hr><h3>تقرير سنوي</h3><button class="primary" id="accAnnualBtn">إظهار التقرير السنوي</button><div id="accAnnual"></div><hr><h3>تسوية الخزينة</h3><div class="row"><div><label>الرصيد الدفتري</label><input id="accBookCash" readonly></div><div><label>الرصيد الفعلي</label><input id="accActualCash" type="number" inputmode="decimal"></div><div style="display:flex;align-items:end"><button class="neutral" id="accReconcileBtn">حساب الفرق</button></div></div><div id="accReconcile"></div></div></section>
+<section id="accounting"><div class="card"><h2>الحسابات والتقارير المحاسبية</h2><div class="notice">القاعدة المحاسبية: الرصيد الافتتاحي يُرحّل من الرصيد النهائي للشهر السابق. الاستثناء الوحيد هو رصيد افتتاحي يدوي تحدده أنت لشهر معين.</div><div class="row"><div><label>الشهر</label><select id="accMonth"></select></div><div><label>السنة</label><select id="accYear"></select></div></div><div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">المستحق على السكان</div><div id="accDue" class="value red">٠ ج.م</div></div><div class="kpi"><div class="label">المحصل</div><div id="accCollected" class="value green">٠ ج.م</div></div><div class="kpi"><div class="label">المصروفات</div><div id="accExpenses" class="value red">٠ ج.م</div></div><div class="kpi"><div class="label">رصيد الخزينة</div><div id="accCash" class="value blue">٠ ج.م</div></div></div><hr><h3>المتأخرات</h3><div style="overflow:auto"><table><thead><tr><th>الوحدة</th><th>الساكن</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th></tr></thead><tbody id="accArrearsBody"></tbody></table></div><hr><h3>كشف حساب ساكن</h3><div class="row"><div><label>الساكن</label><select id="accResident"></select></div><div><label>من تاريخ</label><input id="accResidentFrom" type="date"></div><div><label>إلى تاريخ</label><input id="accResidentTo" type="date"></div><div style="display:flex;align-items:end"><button class="primary" id="accResidentBtn">عرض الكشف</button></div></div><div class="row no-print"><div><button class="goldbtn" id="accResidentOpeningBtn">＋ رصيد افتتاحي للساكن</button></div></div><div id="accResidentStatement"></div><hr><h3>تقرير سنوي</h3><button class="primary" id="accAnnualBtn">إظهار التقرير السنوي</button><div id="accAnnual"></div><hr><h3>تسوية الخزينة</h3><div class="row"><div><label>الرصيد الدفتري</label><input id="accBookCash" readonly></div><div><label>الرصيد الفعلي</label><input id="accActualCash" type="number" inputmode="decimal"></div><div style="display:flex;align-items:end"><button class="neutral" id="accReconcileBtn">حساب الفرق</button></div></div><div id="accReconcile"></div></div></section>
 
 <section id="reports">
 <div class="card">
@@ -260,6 +260,7 @@ function migrate(raw){
    id:r.id||uid(),unit:(r.unit===undefined||r.unit===null)?'':String(r.unit),name:(r.name===undefined||r.name===null||String(r.name).trim().toLowerCase()==='undefined')?'':String(r.name),
    fee:Number(r.fee||0),active:r.active!==false,
    feeHistory:Array.isArray(r.feeHistory)?r.feeHistory.map(h=>({month:String(h.month),fee:Number(h.fee||0)})):[],
+   openingBalances:(r.openingBalances&&typeof r.openingBalances==='object')?Object.fromEntries(Object.entries(r.openingBalances).map(([m,v])=>[String(m),Number(v||0)])):{}
  }));
  d.gate.ops=d.gate.ops.map(x=>({
    id:x.id||uid(),date:x.date||today(),kind:['advance','repay','salary'].includes(x.kind)?x.kind:'salary',
@@ -411,11 +412,36 @@ function residentDueThrough(r,m){
  const start=residentStartMonth(r);
  return months(60).filter(mm=>mm>=start&&mm<=m).reduce((s,mm)=>s+residentFee(r,mm),0);
 }
+function firstOperationMonth(){
+ const dates=db.tx.filter(x=>!x.voided&&x.date).map(x=>String(x.date)).sort();
+ return dates.length?dates[0].slice(0,7):currentMonth();
+}
+function monthRangeFrom(start,end){
+ const out=[], [sy,sm]=String(start).split('-').map(Number), [ey,em]=String(end).split('-').map(Number);
+ if(!sy||!sm||!ey||!em)return out;
+ let y=sy,m=sm;
+ while(y<ey || (y===ey&&m<=em)){out.push(y+'-'+String(m).padStart(2,'0'));m++;if(m>12){m=1;y++;}if(out.length>240)break;}
+ return out;
+}
+function residentOpeningAt(r,m){
+ const entries=Object.entries(r.openingBalances||{}).filter(([mm])=>mm<=m).sort((a,b)=>a[0].localeCompare(b[0]));
+ if(!entries.length)return 0;
+ return Number(entries[entries.length-1][1]||0);
+}
+function residentBalanceThrough(r,m){
+ const start=firstOperationMonth();
+ const opening=residentOpeningAt(r,start);
+ return opening+residentDueThrough(r,m)-residentPaidThrough(r,m);
+}
+function residentPaidStatus(r,m){
+ const fee=residentFee(r,m),paid=paidFor(r,m);
+ return fee>0&&paid>=fee;
+}
 function renderResidentBalances(m){
  const rows=db.residents.filter(r=>r.active!==false).map(r=>{
    const fee=residentFee(r,m),paid=paidFor(r,m);
-   const prevM=months(60).filter(mm=>mm<m).sort().pop();
-   const previous=prevM?(residentDueThrough(r,prevM)-residentPaidThrough(r,prevM)):0;
+   const prevM=monthRangeFrom(firstOperationMonth(),m).slice(-2,-1)[0];
+   const previous=prevM?(residentOpeningAt(r,prevM)+residentDueThrough(r,prevM)-residentPaidThrough(r,prevM)):residentOpeningAt(r,m);
    const current=previous+fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
    return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(safeName)+'</td><td>'+money(previous)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(current)+'</td></tr>';
@@ -427,7 +453,7 @@ function renderResidents(){
  $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
    const fee=residentFee(r,m),paid=paidFor(r,m),remain=fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
-   return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="resident-actions"><button class="income pay-res" data-id="'+r.id+'">تحصيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td class="green">'+money(paid)+'</td><td class="'+(remain?'red':'green')+'">'+money(remain)+'</td><td></td></tr>';
+   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="income pay-res" data-id="'+r.id+'">تحصيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
  }).join('')||'<tr><td colspan="7">لا توجد وحدات نشطة.</td></tr>';
  renderResidentBalances(m);
  document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
@@ -456,8 +482,16 @@ function renderReport(){
  '<div class="kpi"><div class="label">الرصيد النهائي</div><div class="value dark">'+money(t.close)+'</div></div></div>'+
  '<hr><h3>الإيرادات</h3>'+reportTable(inc,'green')+
  '<h3>المصروفات</h3>'+reportTable(exp,'red')+
- '<h3>حركة السلف</h3><table class="print-table"><tbody><tr><td>سلف مصروفة</td><td class="red">'+money(t.adv)+'</td></tr><tr><td>سداد سلف</td><td class="green">'+money(t.rep)+'</td></tr></tbody></table>'+
+ '<h3>حركة السلف</h3><table class="print-table"><tbody><tr><td>سلف مصروفة</td><td>'+money(t.adv)+'</td></tr><tr><td>سداد سلف</td><td>'+money(t.rep)+'</td></tr></tbody></table>'+
+ '<h3>حالة تحصيل السكان</h3>'+residentStatusReport(m)+
  '</div>';
+}
+function residentStatusReport(m){
+ const rows=db.residents.filter(r=>r.active!==false).map(r=>{
+   const paid=residentPaidStatus(r,m);
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td><span class="status-dot '+(paid?'paid':'unpaid')+'"></span>'+ (paid?'مسدد':'غير مسدد') +'</td></tr>';
+ }).join('');
+ return '<table class="print-table"><thead><tr><th>الوحدة</th><th>الساكن</th><th>حالة الاشتراك</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="3">لا يوجد سكان.</td></tr>') +'</tbody></table>';
 }
 function reportTable(arr,c){
  return arr.length?'<table class="print-table"><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>'+
@@ -484,7 +518,27 @@ function renderAccounting(){
  if($('accArrearsBody'))$('accArrearsBody').innerHTML=rows||'<tr><td colspan="5">لا يوجد سكان.</td></tr>';
  const years=[...new Set(months(36).map(x=>x.slice(0,4)))];if($('accYear'))$('accYear').innerHTML=years.map(y=>'<option>'+y+'</option>').join('');
 }
-function showAccResident(){const r=db.residents.find(x=>x.id===$('accResident').value),m=$('accMonth').value||currentMonth();if(!r)return;const ms=months(36).slice().reverse().filter(x=>x<=m);let due=0,paid=0;const rows=ms.map(mm=>{const d=residentFee(r,mm),p=paidFor(r,mm);due+=d;paid+=p;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(d)+'</td><td class="green">'+money(p)+'</td><td class="'+(d-p>0?'red':'green')+'">'+money(Math.max(0,d-p))+'</td></tr>'}).join('');$('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>المستحق: <b>'+money(due)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b class="red">'+money(due-paid)+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>المستحق</th><th>المحصل</th><th>المتبقي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
+function openResidentOpening(){
+ const rid=$('accResident')?.value; const r=db.residents.find(x=>x.id===rid); if(!r)return alert('اختر الساكن أولًا');
+ const m=$('accResidentFrom')?.value?.slice(0,7)||firstOperationMonth(); const old=residentOpeningAt(r,m);
+ $('sheet').innerHTML='<h2>رصيد افتتاحي لحساب ساكن</h2><div class="notice">الساكن: <b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'</div><label>الشهر</label><input id="roMonth" type="month" value="'+m+'"><label>الرصيد الافتتاحي</label><input id="roAmount" type="number" step="0.01" inputmode="decimal" value="'+old+'"><div class="row"><button class="primary" id="saveRo">حفظ</button><button class="neutral" id="cancelRo">إلغاء</button></div>';
+ $('saveRo').onclick=()=>{const mm=$('roMonth').value,amt=Number($('roAmount').value||0);if(!mm)return alert('اختر الشهر');r.openingBalances=r.openingBalances||{};r.openingBalances[mm]=amt;save();closeModal();renderAll();showAccResident();}; $('cancelRo').onclick=closeModal;openModal();
+}
+function showAccResident(){
+ const r=db.residents.find(x=>x.id===$('accResident').value);
+ if(!r)return;
+ const start=$('accResidentFrom')?.value||firstOperationMonth()+'-01';
+ const end=$('accResidentTo')?.value||today();
+ if(start>end)return alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
+ const fromM=start.slice(0,7),toM=end.slice(0,7);
+ const ms=monthRangeFrom(fromM,toM);
+ let due=0,paid=0;
+ const opening=residentOpeningAt(r,fromM);
+ const rows=ms.map(mm=>{const d=residentFee(r,mm),p=paidFor(r,mm);due+=d;paid+=p;const bal=opening+due-paid;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(d)+'</td><td>'+money(p)+'</td><td>'+money(bal)+'</td></tr>'}).join('');
+ const finalBal=opening+due-paid;
+ $('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الفترة: <b>'+start+'</b> إلى <b>'+end+'</b><br>الرصيد الافتتاحي: '+money(opening)+' — المستحق: '+money(due)+' — المحصل: '+money(paid)+' — الرصيد: '+money(finalBal)+'</div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>المستحق</th><th>المحصل</th><th>الرصيد</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
 function showAnnual(){const y=$('accYear').value, ms=months(36).filter(x=>x.startsWith(y)).reverse();let inc=0,exp=0;const rows=ms.map(m=>{const t=totals(m);inc+=t.inc;exp+=t.exp;return '<tr><td>'+fmtMonth(m)+'</td><td>'+money(t.open)+'</td><td class="green">'+money(t.inc)+'</td><td class="red">'+money(t.exp)+'</td><td>'+money(t.close)+'</td></tr>'}).join('');$('accAnnual').innerHTML='<div class="notice">إجمالي الإيرادات: <b class="green">'+money(inc)+'</b> — إجمالي المصروفات: <b class="red">'+money(exp)+'</b> — صافي الحركة: <b>'+money(inc-exp)+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الافتتاحي</th><th>الإيرادات</th><th>المصروفات</th><th>الختامي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
 function reconcileAcc(){const b=Number($('accBookCash').value||0),a=Number($('accActualCash').value||0),d=a-b;$('accReconcile').innerHTML='<div class="'+(Math.abs(d)<0.005?'ok':'danger')+'">الفرق بين الرصيد الفعلي والدفتري: <b>'+money(d)+'</b></div>'}
 function renderAll(){renderDashboard();renderTransactions();renderResidents();renderFunders();renderSuppliers();renderGate();renderReport();renderCats();renderAccounting()}
@@ -610,7 +664,10 @@ function payResident(id){
    const amount=Number($('payAmount').value||0),date=$('payDate').value;
    if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
    if(!date)return alert('اختر التاريخ');
-   db.tx.push({id:uid(),date,month:date.slice(0,7),type:'income',label:'اشتراك شهري — '+residentName,unit:r.unit,residentId:r.id,residentName,amount,note:$('payNote').value.trim(),paymentMethod:'نقدي',voucherNo:'قبض-'+String(db.tx.filter(x=>x.type==='income').length+1).padStart(5,'0')});
+   const payMonth=date.slice(0,7);
+   const duplicate=db.tx.some(x=>!x.voided&&x.type==='income'&&x.month===payMonth&&x.label&&String(x.label).startsWith('اشتراك شهري')&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit)));
+   if(duplicate)return alert('تم تسجيل تحصيل الاشتراك الشهري لهذا الساكن بالفعل في '+fmtMonth(payMonth)+' ولا يسمح التطبيق بتحصيله مرة أخرى.');
+   db.tx.push({id:uid(),date,month:payMonth,type:'income',label:'اشتراك شهري — '+residentName,unit:r.unit,residentId:r.id,residentName,amount,note:$('payNote').value.trim(),paymentMethod:'نقدي',voucherNo:'قبض-'+String(db.tx.filter(x=>x.type==='income').length+1).padStart(5,'0')});
    save();closeModal();renderAll();
  };
  $('cancelPay').onclick=closeModal;openModal();
@@ -755,6 +812,7 @@ $('addFunder').onclick=()=>openFunder();
 if($('addSupplier'))$('addSupplier').onclick=()=>openSupplier();
 if($('accMonth'))$('accMonth').onchange=renderAccounting;
 if($('accResidentBtn'))$('accResidentBtn').onclick=showAccResident;
+if($('accResidentOpeningBtn'))$('accResidentOpeningBtn').onclick=openResidentOpening;
 if($('accAnnualBtn'))$('accAnnualBtn').onclick=showAnnual;
 if($('accReconcileBtn'))$('accReconcileBtn').onclick=reconcileAcc;
 
@@ -776,6 +834,8 @@ if($('scanDataBtn'))$('scanDataBtn').onclick=renderDataScan;
 if($('backupRawBtn'))$('backupRawBtn').onclick=backupRawStorage;
 nav();
 setSelects(currentMonth());
+if($('accResidentFrom'))$('accResidentFrom').value=firstOperationMonth()+'-01';
+if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
