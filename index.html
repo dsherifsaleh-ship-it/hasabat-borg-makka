@@ -453,7 +453,7 @@ function renderResidents(){
  $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
    const fee=residentFee(r,m),paid=paidFor(r,m),remain=fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
-   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="resident-actions"><button class="pay-res collection-status '+(paidStatus?'paid':'unpaid')+'" data-id="'+r.id+'">تحصيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
+   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="pay-res primary" data-id="'+r.id+'">تسجيل</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
  }).join('')||'<tr><td colspan="7">لا توجد وحدات نشطة.</td></tr>';
  renderResidentBalances(m);
  document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
@@ -840,7 +840,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=17').catch(()=>{})}
 })();
 </script>
 </body>
