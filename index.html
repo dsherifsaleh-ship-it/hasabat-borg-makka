@@ -68,7 +68,18 @@ th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;font-siz
 hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 @media(min-width:700px){nav{grid-template-columns:repeat(6,1fr)}.grid{grid-template-columns:repeat(4,1fr)}.modal{align-items:center;justify-content:center}.sheet{max-width:560px;border-radius:22px}}
 @media print{
-header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}main{max-width:none;padding:0}.print-table{min-width:0}
+header,nav,.no-print,.modal{display:none!important}
+body{background:#fff}
+.card{box-shadow:none;border:1px solid #ddd}
+main{max-width:none;padding:0}
+.print-table{min-width:0}
+.report-site-title{display:none!important}
+.report-head{border:0!important;padding:0!important}
+.report-income-table th,.report-income-table td{text-align:center}
+.report-income-table th:nth-child(2),.report-income-table td:nth-child(2){text-align:right}
+.report-income-table .report-status{width:64px;text-align:center}
+.report-income-table .status-dot{width:12px;height:12px;margin:0}
+.report-income-table tbody tr{break-inside:avoid}
 }
 
 .operation-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
@@ -473,17 +484,31 @@ function renderGate(){
 }
 function renderReport(){
  const m=$('reportMonth').value||currentMonth(),t=totals(m);
- const inc=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income');
+ const residents=db.residents.filter(r=>r.active!==false);
+ const otherInc=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income'&&!(x.label&&String(x.label).startsWith('اشتراك شهري')));
  const exp=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='expense');
- $('report').innerHTML='<div class="report-head"><h2 style="margin-top:0">حسابات برج مكة</h2><div class="month-title">'+fmtMonth(m)+'</div>'+
+
+ const incomeRows=residents.map(r=>{
+   const paid=paidFor(r,m);
+   const paidStatus=residentPaidStatus(r,m);
+   const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
+   return '<tr><td>'+escapeHtml(fmtMonth(m))+'</td><td>'+escapeHtml(safeName)+'</td><td>'+escapeHtml(r.unit)+'</td><td>'+money(paid)+'</td><td class="report-status"><span class="status-dot '+(paidStatus?'paid':'unpaid')+'" aria-label="'+(paidStatus?'مسدد':'غير مسدد')+'"></span></td></tr>';
+ }).join('');
+
+ const otherRows=otherInc.map(x=>'<tr><td>'+escapeHtml(x.date)+'</td><td>'+escapeHtml(x.funderName||x.residentName||x.label||'إيراد آخر')+'</td><td>'+escapeHtml(x.unit||'—')+'</td><td>'+money(x.amount)+'</td><td class="report-status"><span class="muted">—</span></td></tr>').join('');
+
+ const incomeTable=(incomeRows||otherRows)
+   ?'<table class="print-table report-income-table"><thead><tr><th>التاريخ</th><th>اسم الساكن</th><th>رقم الوحدة</th><th>المبلغ</th><th>حالة السداد</th></tr></thead><tbody>'+incomeRows+otherRows+'</tbody></table>'
+   :'<div class="small">لا توجد إيرادات.</div>';
+
+ $('report').innerHTML='<div class="report-head"><h2 class="report-site-title" style="margin-top:0">حسابات برج مكة</h2><div class="month-title">'+fmtMonth(m)+'</div>'+
  '<div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">الرصيد الافتتاحي</div><div class="value blue">'+money(t.open)+'</div></div>'+
  '<div class="kpi"><div class="label">الإيرادات</div><div class="value green">'+money(t.inc)+'</div></div>'+
  '<div class="kpi"><div class="label">المصروفات</div><div class="value red">'+money(t.exp)+'</div></div>'+
  '<div class="kpi"><div class="label">الرصيد النهائي</div><div class="value dark">'+money(t.close)+'</div></div></div>'+
- '<hr><h3>الإيرادات</h3>'+reportTable(inc,'green')+
+ '<hr><h3>الإيرادات</h3>'+incomeTable+
  '<h3>المصروفات</h3>'+reportTable(exp,'red')+
  '<h3>حركة السلف</h3><table class="print-table"><tbody><tr><td>سلف مصروفة</td><td>'+money(t.adv)+'</td></tr><tr><td>سداد سلف</td><td>'+money(t.rep)+'</td></tr></tbody></table>'+
- '<h3>حالة تحصيل السكان</h3>'+residentStatusReport(m)+
  '</div>';
 }
 function residentStatusReport(m){
