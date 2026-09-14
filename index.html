@@ -44,7 +44,7 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;ove
 .residents-table .actions{display:none}
 .resident-actions{display:flex;gap:4px;margin-top:6px}
 .resident-actions button{flex:1;padding:6px 4px;font-size:11px}
-.resident-name{font-weight:800;font-size:15px;line-height:1.45}.collection-status{font-size:11px;font-weight:900;margin-top:3px}.collection-status.paid{color:var(--green)}.collection-status.unpaid{color:var(--red)}.status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-left:5px}.status-dot.paid{background:var(--green)}.status-dot.unpaid{background:var(--red)}.collection-report{margin-top:10px;border:1px solid #dfe7ec;border-radius:14px;overflow:hidden}.collection-report table{margin:0}.collection-report .status-name{font-weight:800}.collection-report .status-cell{white-space:nowrap}.paid-text{color:var(--green);font-weight:900}.unpaid-text{color:var(--red);font-weight:900}.collection-report .status-dot{width:12px;height:12px;margin-left:7px}.amount-positive{color:var(--green)}.amount-negative{color:var(--red)}.amount-zero{color:#71818d}
+.resident-name{font-weight:800;font-size:15px;line-height:1.45}.collection-status{font-size:11px;font-weight:900;margin-top:3px}.collection-status.paid{color:var(--green)}.collection-status.unpaid{color:var(--red)}.status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-left:5px}.status-dot.paid{background:var(--green)}.status-dot.unpaid{background:var(--red)}.amount-positive{color:var(--green)}.amount-negative{color:var(--red)}.amount-zero{color:#71818d}
 .resident-unit{font-weight:900}
 @media(max-width:480px){
  .residents-table th,.residents-table td{font-size:11px}
@@ -67,8 +67,31 @@ th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;font-siz
 .report-head{border:1px solid var(--line);border-radius:16px;padding:15px}
 hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 @media(min-width:700px){nav{grid-template-columns:repeat(6,1fr)}.grid{grid-template-columns:repeat(4,1fr)}.modal{align-items:center;justify-content:center}.sheet{max-width:560px;border-radius:22px}}
+@media screen{
+.report-op-link{border:0;background:none;color:var(--blue);text-decoration:underline;font-weight:900;padding:0;cursor:pointer}
+.report-op-print{display:none}
+.report-income-table th,.report-income-table td{text-align:center}
+.report-income-table th:nth-child(3),.report-income-table td:nth-child(3),
+.report-income-table th:nth-child(5),.report-income-table td:nth-child(5){text-align:right}
+.report-income-table .report-status{width:90px;text-align:center}
+.report-income-table .status-dot{width:12px;height:12px;margin:0 4px}
+.report-income-table tbody tr{break-inside:avoid}
+}
 @media print{
-header,nav,.no-print,.modal{display:none!important}body{background:#fff}.card{box-shadow:none;border:1px solid #ddd}main{max-width:none;padding:0}.print-table{min-width:0}
+header,nav,.no-print,.modal{display:none!important}
+body{background:#fff}
+.card{box-shadow:none;border:1px solid #ddd}
+main{max-width:none;padding:0}
+.print-table{min-width:0}
+.report-site-title{display:none!important}
+.report-head{border:0!important;padding:0!important}
+.report-op-print{display:inline!important;font-weight:800}
+.report-income-table th,.report-income-table td{text-align:center}
+.report-income-table th:nth-child(3),.report-income-table td:nth-child(3),
+.report-income-table th:nth-child(5),.report-income-table td:nth-child(5){text-align:right}
+.report-income-table .report-status{width:90px;text-align:center}
+.report-income-table .status-dot{width:12px;height:12px;margin:0 4px}
+.report-income-table tbody tr{break-inside:avoid}
 }
 
 .operation-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
@@ -471,40 +494,73 @@ function renderGate(){
  ).join('')||'<tr><td colspan="4">لا توجد عمليات.</td></tr>';
  document.querySelectorAll('.del-gate').forEach(b=>b.onclick=()=>deleteGate(b.dataset.id));
 }
+function reportOperationLink(x){
+ const no=String(x.voucherNo||'').trim()||'بدون رقم';
+ return '<button type="button" class="report-op-link no-print" data-op-id="'+escapeAttr(x.id)+'">'+escapeHtml(no)+'</button>'+
+        '<span class="report-op-print">'+escapeHtml(no)+'</span>';
+}
+function openReportOperation(id){
+ const x=db.tx.find(z=>z.id===id);
+ if(!x)return;
+ const who=x.residentName||x.funderName||x.supplierName||'—';
+ const unit=x.unit||'—';
+ const type=x.type==='income'?'إيراد':'مصروف';
+ $('sheet').innerHTML='<h2>العملية '+escapeHtml(x.voucherNo||'بدون رقم')+'</h2>'+
+   '<div class="notice"><b>'+escapeHtml(type)+'</b><br>'+
+   'التاريخ: '+escapeHtml(x.date)+'<br>'+
+   'الاسم: '+escapeHtml(who)+'<br>'+
+   'الوحدة: '+escapeHtml(unit)+'<br>'+
+   'البيان: '+escapeHtml(x.note||x.label||'—')+'<br>'+
+   'المبلغ: '+money(x.amount)+'</div>'+
+   '<div class="row"><button class="primary" id="reportEditOp">تعديل العملية</button><button class="expense" id="reportDeleteOp">حذف العملية</button><button class="neutral" id="reportCloseOp">إلغاء</button></div>';
+ $('reportEditOp').onclick=()=>{closeModal();openTx(x.type,x.id)};
+ $('reportDeleteOp').onclick=()=>{closeModal();deleteTx(x.id)};
+ $('reportCloseOp').onclick=closeModal;
+ openModal();
+}
 function renderReport(){
  const m=$('reportMonth').value||currentMonth(),t=totals(m);
- const allIncome=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income');
- const subscriptionIncome=allIncome.filter(x=>String(x.label||'').startsWith('اشتراك شهري'));
- const otherIncome=allIncome.filter(x=>!String(x.label||'').startsWith('اشتراك شهري'));
- $('report').innerHTML='<div class="report-head"><h2 style="margin-top:0">حسابات برج مكة</h2>'+
- '<div class="month-title">التقرير الشهري — '+fmtMonth(m)+'</div>'+
- '<div class="small" style="margin-top:6px">تاريخ التقرير: '+today()+'</div>'+
- '<div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">الرصيد الافتتاحي</div><div class="value blue">'+money(t.open)+'</div></div>'+
- '<div class="kpi"><div class="label">إجمالي الإيرادات</div><div class="value green">'+money(t.inc)+'</div></div>'+
- '<div class="kpi"><div class="label">إجمالي المصروفات</div><div class="value red">'+money(t.exp)+'</div></div>'+
- '<div class="kpi"><div class="label">الرصيد النهائي</div><div class="value dark">'+money(t.close)+'</div></div></div>'+
- '<hr><h3>الإيرادات</h3>'+residentIncomeReport(m,subscriptionIncome,otherIncome)+
- '<h3>المصروفات</h3>'+reportTable(expenseReportRows(m),'red')+
- '</div>';
-}
-function residentIncomeReport(m,subscriptionIncome,otherIncome){
- const residents=db.residents.slice().sort((a,b)=>String(a.unit||'').localeCompare(String(b.unit||''),undefined,{numeric:true}));
- let rows=residents.map(r=>{
-   const fee=residentFee(r,m);
-   const txs=subscriptionIncome.filter(x=>(x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit));
-   const paid=txs.reduce((s,x)=>s+Number(x.amount||0),0);
-   const fullyPaid=fee>0 && paid>=fee;
-   const date=txs.length?txs.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-1)[0].date:'—';
-   const name=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
-   const status=fullyPaid?'مسدد':'غير مسدد';
-   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(name)+'</td><td>'+date+'</td><td>'+money(paid)+'</td><td class="status-cell"><span class="status-dot '+(fullyPaid?'paid':'unpaid')+'"></span><span class="status-name '+(fullyPaid?'paid-text':'unpaid-text')+'">'+status+'</span></td></tr>';
+ const residents=db.residents.filter(r=>r.active!==false);
+ const subscriptionTx=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income'&&x.label&&String(x.label).startsWith('اشتراك شهري'));
+ const otherInc=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income'&&!(x.label&&String(x.label).startsWith('اشتراك شهري')));
+ const exp=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='expense');
+
+ const incomeRows=residents.map(r=>{
+   const paid=paidFor(r,m);
+   const paidStatus=residentPaidStatus(r,m);
+   const txs=subscriptionTx.filter(x=>(x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit));
+   const tx=txs[txs.length-1];
+   const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
+   return '<tr><td>'+escapeHtml(tx?.date||fmtMonth(m))+'</td><td>'+(tx?reportOperationLink(tx):'<span class="muted">—</span>')+'</td><td>'+escapeHtml(safeName)+'</td><td>'+escapeHtml(r.unit)+'</td><td>اشتراك شهري</td><td>'+money(paid)+'</td><td class="report-status"><span class="status-dot '+(paidStatus?'paid':'unpaid')+'" aria-label="'+(paidStatus?'مسدد':'غير مسدد')+'"></span><span class="report-status-text">'+(paidStatus?'مسدد':'غير مسدد')+'</span></td></tr>';
  }).join('');
- const other=otherIncome.map(x=>'<tr><td>—</td><td>'+escapeHtml(x.label)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+'</td><td>'+escapeHtml(x.date)+'</td><td>'+money(x.amount)+'</td><td class="status-cell">—</td></tr>').join('');
- return '<table class="print-table"><thead><tr><th>الوحدة</th><th>اسم الساكن / البيان</th><th>التاريخ</th><th>المبلغ المحصل</th><th>حالة السداد</th></tr></thead><tbody>'+
- (rows||'<tr><td colspan="5">لا يوجد سكان.</td></tr>')+other+'</tbody></table>';
+
+ const otherRows=otherInc.map(x=>{
+   const name=x.residentName||x.funderName||'إيراد آخر';
+   return '<tr><td>'+escapeHtml(x.date)+'</td><td>'+reportOperationLink(x)+'</td><td>'+escapeHtml(name)+'</td><td>'+escapeHtml(x.unit||'—')+'</td><td>'+escapeHtml(x.label||'إيراد آخر')+'</td><td>'+money(x.amount)+'</td><td class="report-status"><span class="muted">—</span></td></tr>';
+ }).join('');
+
+ const incomeTable=(incomeRows||otherRows)
+   ?'<table class="print-table report-income-table"><thead><tr><th>التاريخ</th><th>رقم العملية</th><th>اسم الساكن / الممول</th><th>رقم الوحدة</th><th>البيان</th><th>المبلغ</th><th>حالة السداد</th></tr></thead><tbody>'+incomeRows+otherRows+'</tbody></table>'
+   :'<div class="small">لا توجد إيرادات.</div>';
+
+ $('report').innerHTML='<div class="report-head"><h2 class="report-site-title" style="margin-top:0">حسابات برج مكة</h2><div class="month-title">'+fmtMonth(m)+'</div>'+
+ '<div class="grid" style="margin-top:12px"><div class="kpi"><div class="label">الرصيد الافتتاحي</div><div class="value blue">'+money(t.open)+'</div></div>'+
+ '<div class="kpi"><div class="label">الإيرادات</div><div class="value green">'+money(t.inc)+'</div></div>'+
+ '<div class="kpi"><div class="label">المصروفات</div><div class="value red">'+money(t.exp)+'</div></div>'+
+ '<div class="kpi"><div class="label">الرصيد النهائي</div><div class="value dark">'+money(t.close)+'</div></div></div>'+
+ '<hr><h3>الإيرادات</h3>'+incomeTable+
+ '<h3>المصروفات</h3>'+reportTable(exp,'red')+
+ '<h3>حركة السلف</h3><table class="print-table"><tbody><tr><td>سلف مصروفة</td><td>'+money(t.adv)+'</td></tr><tr><td>سداد سلف</td><td>'+money(t.rep)+'</td></tr></tbody></table>'+
+ '</div>';
+ document.querySelectorAll('.report-op-link').forEach(b=>b.onclick=()=>openReportOperation(b.dataset.opId));
 }
-function expenseReportRows(m){
- return db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='expense');
+function residentStatusReport(m){
+ const rows=db.residents.filter(r=>r.active!==false).map(r=>{
+   const paid=residentPaidStatus(r,m);
+   const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td><span class="status-dot '+(paid?'paid':'unpaid')+'"></span>'+escapeHtml(safeName)+'</td><td>'+ (paid?'مسدد':'غير مسدد') +'</td></tr>';
+ }).join('');
+ return '<table class="print-table"><thead><tr><th>الوحدة</th><th>الساكن</th><th>حالة الاشتراك</th></tr></thead><tbody>'+ (rows||'<tr><td colspan="3">لا يوجد سكان.</td></tr>') +'</tbody></table>';
 }
 function reportTable(arr,c){
  return arr.length?'<table class="print-table"><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th></tr></thead><tbody>'+
@@ -852,7 +908,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=18').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=17').catch(()=>{})}
 })();
 </script>
 </body>
