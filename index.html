@@ -68,42 +68,49 @@ th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;font-siz
 hr{border:0;border-top:1px solid var(--line);margin:16px 0}
 @media(min-width:700px){nav{grid-template-columns:repeat(6,1fr)}.grid{grid-template-columns:repeat(4,1fr)}.modal{align-items:center;justify-content:center}.sheet{max-width:560px;border-radius:22px}}
 @media print{
-@page{size:A4 portrait;margin:6mm}
-html,body{background:#fff!important;margin:0!important;padding:0!important;width:100%!important}
+@page{size:A4 landscape;margin:0}
+html,body{background:#fff!important;margin:0!important;padding:0!important;width:100%!important;min-height:100%!important}
 header,nav,.no-print,.modal,body>footer{display:none!important}
 main{max-width:none!important;width:100%!important;margin:0!important;padding:0!important}
 section:not(#reports),main>div:not(#reports){display:none!important}
-#reports{display:block!important;margin:0!important;padding:0!important}
-#reports>.card{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important}
-#report{display:block!important;width:100%!important;margin:0!important}
-.monthly-report{font-size:9px;line-height:1.15;color:#142b3f;direction:rtl}
-.monthly-report .report-head{border:1px solid #173b5d;border-radius:0;padding:5px 7px;margin:0 0 5px}
-.monthly-report .report-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.monthly-report .report-title{font-size:17px;font-weight:900;margin:0}
-.monthly-report .report-subtitle{font-size:11px;font-weight:800;margin-top:2px}
-.monthly-report .report-date{font-size:9px;white-space:nowrap}
-.monthly-report .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:5px}
-.monthly-report .summary .kpi{padding:4px 5px;border-radius:4px;border:1px solid #cbd8e1;background:#f7fafc;text-align:center}
-.monthly-report .summary .label{font-size:8px;font-weight:800;margin-bottom:2px}
-.monthly-report .summary .value{font-size:11px;font-weight:900}
-.monthly-report .report-columns{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:start}
-.monthly-report .report-block{break-inside:avoid;page-break-inside:avoid}
-.monthly-report .report-block h3{font-size:11px;margin:0;padding:4px 5px;border:1px solid #b8c9d5;border-bottom:0;background:#eaf3f9;text-align:center;font-weight:900}
-.monthly-report .report-block.expenses h3{background:#fff0f0}
+#reports{display:block!important;margin:0!important;padding:0!important;width:100%!important}
+#reports>.card{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;width:100%!important}
+#report{display:block!important;width:100%!important;margin:0!important;padding:0!important}
+.monthly-report{box-sizing:border-box;width:100%;height:100vh;min-height:190mm;padding:7mm 8mm 6mm;font-size:10px;line-height:1.15;color:#142b3f;direction:rtl;overflow:hidden;background:#fff;border:1px solid #173b5d}
+.monthly-report .report-head{border:0;padding:0;margin:0 0 5mm}
+.monthly-report .report-top{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:8mm;align-items:start;direction:ltr}
+.monthly-report .report-summary{border:1px solid #8fb6d7;border-radius:2px;overflow:hidden;direction:rtl}
+.monthly-report .report-summary .sum-row{display:grid;grid-template-columns:1fr 1.6fr;border-bottom:1px solid #b8d0e2;min-height:9mm;align-items:center}
+.monthly-report .report-summary .sum-row:last-child{border-bottom:0;background:#dcecf8}
+.monthly-report .report-summary .sum-label{font-weight:900;text-align:right;padding:2mm 3mm;font-size:10px}
+.monthly-report .report-summary .sum-value{text-align:center;padding:2mm 2mm;font-size:12px;font-weight:900}
+.monthly-report .report-summary .sum-value.positive,.monthly-report .report-summary .sum-value.positive *{color:#087f3f!important}.monthly-report .report-summary .sum-value.negative,.monthly-report .report-summary .sum-value.negative *{color:#d92323!important}
+.monthly-report .report-center{direction:rtl;text-align:center;padding-top:1mm}
+.monthly-report .report-title{font-size:25px;font-weight:900;margin:0 0 1mm;color:#173b5d;line-height:1.05}
+.monthly-report .report-subtitle{font-size:14px;font-weight:900;margin:0 0 4mm;color:#173b5d}
+.monthly-report .report-month{display:inline-block;background:#d9ebfa;border-radius:5px;padding:2.5mm 14mm;font-size:16px;font-weight:900;color:#173b5d}
+.monthly-report .report-org{direction:rtl;text-align:right;padding-top:1mm;font-size:14px;font-weight:900;color:#173b5d;line-height:1.55}
+.monthly-report .report-org .org-name{font-size:16px}
+.monthly-report .report-org .report-date{font-size:10px;font-weight:800;margin-top:10mm}
+.monthly-report .report-columns{display:grid;grid-template-columns:1fr 1.18fr;gap:5mm;align-items:stretch;direction:ltr}
+.monthly-report .report-block{break-inside:avoid;page-break-inside:avoid;direction:rtl;display:flex;flex-direction:column;min-width:0}
+.monthly-report .report-block h3{font-size:13px;margin:0;padding:3mm 2mm;border:1px solid #9fb4c3;border-bottom:0;background:#eaf3f9;text-align:center;font-weight:900}
+.monthly-report .report-block.income h3{background:#dff3e5;color:#145d31}
+.monthly-report .report-block.expenses h3{background:#f9dddd;color:#8b2020}
 .monthly-report table.print-table{width:100%!important;min-width:0!important;border-collapse:collapse;table-layout:fixed;margin:0!important}
-.monthly-report table.print-table th,.monthly-report table.print-table td{padding:2px 3px!important;font-size:8px!important;line-height:1.12!important;border:1px solid #b8c4cc!important;text-align:right;vertical-align:middle}
-.monthly-report table.print-table th{background:#eaf3f9!important;font-weight:900}
+.monthly-report table.print-table th,.monthly-report table.print-table td{padding:1.65mm 1.8mm!important;font-size:9px!important;line-height:1.1!important;border:1px solid #aebcc5!important;text-align:right;vertical-align:middle;height:6.6mm;box-sizing:border-box}
+.monthly-report table.print-table th{background:#eaf3f9!important;font-weight:900;font-size:9px!important}
 .monthly-report .income-table th{background:#eaf7ee!important}
 .monthly-report .expenses table.print-table th{background:#fff0f0!important}
-.monthly-report .income-table th:nth-child(1){width:8%}.monthly-report .income-table th:nth-child(2){width:31%}.monthly-report .income-table th:nth-child(3){width:16%}.monthly-report .income-table th:nth-child(4){width:16%}.monthly-report .income-table th:nth-child(5){width:29%}
+.monthly-report .income-table th:nth-child(1){width:8%}.monthly-report .income-table th:nth-child(2){width:31%}.monthly-report .income-table th:nth-child(3){width:15%}.monthly-report .income-table th:nth-child(4){width:17%}.monthly-report .income-table th:nth-child(5){width:29%}
 .monthly-report .income-table td:nth-child(2){font-weight:800}
-.monthly-report .income-table .status-dot{width:8px!important;height:8px!important;margin-left:3px!important}
-.monthly-report .income-table .status-name{font-size:8px!important}
+.monthly-report .income-table .status-dot{width:9px!important;height:9px!important;margin-left:2mm!important}
+.monthly-report .income-table .status-name{font-size:9px!important;font-weight:900}
 .monthly-report .zero-paid{font-weight:900}
 .monthly-report .other-income-row td{background:#fafafa!important;font-weight:700}
-.monthly-report .total-row td{font-size:9px!important;font-weight:900;background:#eaf7ee!important}
+.monthly-report .total-row td{font-size:11px!important;font-weight:900;background:#eaf7ee!important;height:9mm}
 .monthly-report .expenses .total-row td{background:#fff0f0!important}
-.monthly-report .report-note{font-size:7.5px;margin-top:4px;color:#526777}
+.monthly-report .status-cell{text-align:center!important;white-space:nowrap}
 }
 
 
@@ -512,15 +519,23 @@ function renderReport(){
  const allIncome=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income');
  const subscriptionIncome=allIncome.filter(x=>String(x.label||'').startsWith('اشتراك شهري'));
  const otherIncome=allIncome.filter(x=>!String(x.label||'').startsWith('اشتراك شهري'));
- $('report').innerHTML='<div class="monthly-report"><div class="report-head">'+
- '<div class="report-title-row"><div><div class="report-title">حسابات برج مكة</div><div class="report-subtitle">تقرير الحركة المالية الشهرية — '+fmtMonth(m)+'</div></div><div class="report-date">تاريخ التقرير: '+today()+'</div></div>'+
- '<div class="summary"><div class="kpi"><div class="label">الرصيد الافتتاحي</div><div class="value">'+money(t.open)+'</div></div>'+
- '<div class="kpi"><div class="label">إجمالي الإيرادات</div><div class="value">'+money(t.inc)+'</div></div>'+
- '<div class="kpi"><div class="label">إجمالي المصروفات</div><div class="value">'+money(t.exp)+'</div></div>'+
- '<div class="kpi"><div class="label">الرصيد النهائي</div><div class="value">'+money(t.close)+'</div></div></div></div>'+
- '<div class="report-columns"><div class="report-block income"><h3>الإيرادات</h3>'+residentIncomeReport(m,subscriptionIncome,otherIncome)+'</div>'+
- '<div class="report-block expenses"><h3>المصروفات</h3>'+reportTable(expenseReportRows(m),'red')+'</div></div>'+
- '<div class="report-note">* يظهر السكان جميعًا في كشف الاشتراكات، ويظهر المبلغ المحصل فعليًا فقط؛ غير المسدد يظهر أمامه صفر وحالة سداد باللون الأحمر.</div></div>';
+ const valClass=n=>Number(n||0)<0?'negative':Number(n||0)>0?'positive':'';
+ $('report').innerHTML='<div class="monthly-report">'+
+ '<div class="report-head">'+
+ '<div class="report-top">'+
+ '<div class="report-summary">'+
+ '<div class="sum-row"><div class="sum-label">الرصيد السابق</div><div class="sum-value '+valClass(t.open)+'">'+money(t.open)+'</div></div>'+
+ '<div class="sum-row"><div class="sum-label">إجمالي الإيرادات</div><div class="sum-value '+valClass(t.inc)+'">'+money(t.inc)+'</div></div>'+
+ '<div class="sum-row"><div class="sum-label">إجمالي المصروفات</div><div class="sum-value '+valClass(-Math.abs(t.exp))+'">'+money(t.exp)+'</div></div>'+
+ '<div class="sum-row"><div class="sum-label">الرصيد الحالي</div><div class="sum-value '+valClass(t.close)+'">'+money(t.close)+'</div></div>'+
+ '</div>'+ 
+ '<div class="report-center"><div class="report-title">حسابات برج مكة</div><div class="report-subtitle">تقرير الحركة المالية الشهري</div><div class="report-month">'+fmtMonth(m)+'</div></div>'+ 
+ '<div class="report-org"><div class="org-name">اتحاد الشاغلين<br>برج مكة</div><div class="report-date">تاريخ التقرير: '+today()+'</div></div>'+ 
+ '</div></div>'+ 
+ '<div class="report-columns">'+
+ '<div class="report-block expenses"><h3>المصروفات - '+fmtMonth(m)+'</h3>'+reportTable(expenseReportRows(m),'red')+'</div>'+ 
+ '<div class="report-block income"><h3>إيرادات شهر '+fmtMonth(m)+'</h3>'+residentIncomeReport(m,subscriptionIncome,otherIncome)+'</div>'+ 
+ '</div></div>';
 }
 function residentIncomeReport(m,subscriptionIncome,otherIncome){
  const residents=db.residents.slice().sort((a,b)=>String(a.unit||'').localeCompare(String(b.unit||''),undefined,{numeric:true}));
