@@ -76,7 +76,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 #reports{display:block!important;margin:0!important;padding:0!important;width:100%!important}
 #reports>.card{display:block!important;margin:0!important;padding:0!important;border:0!important;box-shadow:none!important;width:100%!important}
 #report{display:block!important;width:100%!important;margin:0!important;padding:0!important}
-.monthly-report{box-sizing:border-box;width:100%;height:100vh;min-height:190mm;padding:7mm 8mm 6mm;font-size:10px;line-height:1.15;color:#142b3f;direction:rtl;overflow:hidden;background:#fff;border:1px solid #173b5d}
+.monthly-report{box-sizing:border-box;width:297mm;height:210mm;min-height:210mm;max-height:210mm;padding:7mm 8mm 6mm;font-size:10px;line-height:1.15;color:#142b3f;direction:rtl;overflow:hidden;background:#fff;border:1px solid #173b5d;page-break-after:avoid;break-after:avoid}
 .monthly-report .report-head{border:0;padding:0;margin:0 0 5mm}
 .monthly-report .report-top{display:grid;grid-template-columns:1fr 1.45fr 1fr;gap:8mm;align-items:start;direction:ltr}
 .monthly-report .report-summary{border:1px solid #8fb6d7;border-radius:2px;overflow:hidden;direction:rtl}
@@ -514,6 +514,34 @@ function renderGate(){
  ).join('')||'<tr><td colspan="4">لا توجد عمليات.</td></tr>';
  document.querySelectorAll('.del-gate').forEach(b=>b.onclick=()=>deleteGate(b.dataset.id));
 }
+function printReportPage(){
+ const report=$('report');
+ if(!report || !report.innerHTML.trim()) return;
+ const w=window.open('about:blank','_blank');
+ if(!w){ window.print(); return; }
+ const styles=[...document.querySelectorAll('style')].map(s=>s.outerHTML).join('');
+ const reportHtml=report.innerHTML;
+ w.document.open();
+ w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title>${styles}<style>
+ @page{size:A4 landscape;margin:0}
+ html,body{margin:0!important;padding:0!important;width:297mm!important;height:210mm!important;background:#fff!important;overflow:hidden!important}
+ body{font-family:Arial,"Tahoma",sans-serif}
+ .monthly-report{box-sizing:border-box!important;width:297mm!important;height:210mm!important;min-height:210mm!important;max-height:210mm!important;margin:0!important;padding:7mm 8mm 6mm!important;overflow:hidden!important;border:1px solid #173b5d!important;border-radius:0!important;background:#fff!important;page-break-after:avoid!important;break-after:avoid!important}
+ .monthly-report .report-head{margin:0 0 4mm!important}
+ .monthly-report .report-top{gap:7mm!important}
+ .monthly-report .report-title{font-size:25px!important}
+ .monthly-report .report-subtitle{font-size:14px!important;margin-bottom:3mm!important}
+ .monthly-report .report-month{font-size:16px!important;padding:2mm 13mm!important}
+ .monthly-report .report-org .report-date{margin-top:8mm!important}
+ .monthly-report .report-columns{gap:5mm!important}
+ .monthly-report .report-block h3{padding:2.5mm 2mm!important;font-size:13px!important}
+ .monthly-report table.print-table th,.monthly-report table.print-table td{padding:1.45mm 1.6mm!important;height:6.2mm!important;font-size:8.7px!important;line-height:1.05!important}
+ .monthly-report .total-row td{height:8mm!important;font-size:10.5px!important}
+ a{color:inherit!important;text-decoration:none!important}
+ </style></head><body>${reportHtml}</body></html>`);
+ w.document.close();
+ setTimeout(()=>{w.focus();w.print();},350);
+}
 function renderReport(){
  const m=$('reportMonth').value||currentMonth(),t=totals(m);
  const allIncome=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income');
@@ -887,7 +915,7 @@ $('gateSalary').onclick=()=>openGate('salary');
 $('gateAdvance').onclick=()=>openGate('advance');
 $('gateRepay').onclick=()=>openGate('repay');
 $('reportMonth').onchange=renderReport;
-$('printReport').onclick=()=>window.print();
+$('printReport').onclick=printReportPage;
 $('exportBtn').onclick=exportData;
 $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''};
@@ -902,7 +930,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=18').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=22').catch(()=>{})}
 })();
 </script>
 </body>
