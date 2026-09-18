@@ -34,13 +34,14 @@ label{display:block;font-size:13px;color:#60717d;margin:9px 0 5px}
 table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
 .residents-table{min-width:0!important;table-layout:fixed}
 .residents-table th,.residents-table td{padding:8px 5px}
-.residents-table th:nth-child(1),.residents-table td:nth-child(1){width:10%;text-align:center}
-.residents-table th:nth-child(2),.residents-table td:nth-child(2){width:30%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
-.residents-table th:nth-child(3),.residents-table td:nth-child(3){width:14%;font-size:12px}
-.residents-table th:nth-child(4),.residents-table td:nth-child(4){width:14%;font-size:12px}
-.residents-table th:nth-child(5),.residents-table td:nth-child(5){width:14%;font-size:12px}
-.residents-table th:nth-child(6),.residents-table td:nth-child(6){width:18%;font-size:12px}
-.residents-table th:nth-child(7),.residents-table td:nth-child(7){width:0;display:none}
+.residents-table th:nth-child(1),.residents-table td:nth-child(1){width:9%;text-align:center}
+.residents-table th:nth-child(2),.residents-table td:nth-child(2){width:25%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+.residents-table th:nth-child(3),.residents-table td:nth-child(3){width:12%;font-size:12px}
+.residents-table th:nth-child(4),.residents-table td:nth-child(4){width:12%;font-size:12px}
+.residents-table th:nth-child(5),.residents-table td:nth-child(5){width:13%;font-size:12px}
+.residents-table th:nth-child(6),.residents-table td:nth-child(6){width:13%;font-size:12px}
+.residents-table th:nth-child(7),.residents-table td:nth-child(7){width:16%;font-size:12px}
+.residents-table th:nth-child(8),.residents-table td:nth-child(8){width:0;display:none}
 .residents-table .actions{display:none}
 .resident-actions{display:flex;gap:4px;margin-top:6px}
 .resident-actions button{flex:1;padding:6px 4px;font-size:11px}
@@ -48,11 +49,7 @@ table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;ove
 .resident-unit{font-weight:900}
 @media(max-width:480px){
  .residents-table th,.residents-table td{font-size:11px}
- .residents-table th:nth-child(2),.residents-table td:nth-child(2){width:31%}
- .residents-table th:nth-child(3),.residents-table td:nth-child(3){width:14%}
- .residents-table th:nth-child(4),.residents-table td:nth-child(4){width:14%}
- .residents-table th:nth-child(5),.residents-table td:nth-child(5){width:14%}
- .residents-table th:nth-child(6),.residents-table td:nth-child(6){width:17%}
+ .residents-table th:nth-child(2),.residents-table td:nth-child(2){width:25%}
  .resident-name{font-size:14px}
 }
 th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;font-size:14px;vertical-align:top}th{background:#f5f8fa}
@@ -191,8 +188,8 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 <h2>السكان والاشتراكات</h2>
 <button class="primary no-print" id="addResident">＋ إضافة ساكن/وحدة</button>
 <div class="row" style="margin-top:10px"><div><label>شهر المتابعة</label><select id="residentMonth"></select></div></div>
-<div style="overflow:auto;margin-top:10px"><table class="residents-table"><thead><tr><th>الوحدة</th><th>الاسم</th><th>الاشتراك</th><th>المطلوب</th><th>المحصل</th><th>المتبقي</th><th></th></tr></thead><tbody id="resBody"></tbody></table></div>
-<hr><h3>كشف أرصدة السكان</h3><div class="notice">يوضح الرصيد السابق حتى نهاية الشهر السابق، ومستحق الشهر، وما تم تحصيله، ثم الرصيد الحالي لكل ساكن.</div><div style="overflow:auto"><table><thead><tr><th>الوحدة</th><th>الساكن</th><th>الرصيد السابق</th><th>مستحق الشهر</th><th>المحصل</th><th>الرصيد الحالي</th></tr></thead><tbody id="resBalancesBody"></tbody></table></div>
+<div style="overflow:auto;margin-top:10px"><table class="residents-table"><thead><tr><th>الوحدة</th><th>الاسم</th><th>الاشتراك</th><th>مستحق إضافي</th><th>إجمالي المطلوب</th><th>المحصل</th><th>المتبقي</th><th></th></tr></thead><tbody id="resBody"></tbody></table></div>
+<hr><h3>كشف أرصدة السكان</h3><div class="notice">يعرض الاشتراك الشهري والمستحقات الإضافية كلًّا على حدة، ثم إجمالي المطلوب والرصيد الحالي.</div><div style="overflow:auto"><table><thead><tr><th>الوحدة</th><th>الساكن</th><th>الرصيد السابق</th><th>الاشتراك</th><th>مستحق إضافي</th><th>إجمالي المطلوب</th><th>المحصل</th><th>الرصيد الحالي</th></tr></thead><tbody id="resBalancesBody"></tbody></table></div>
 </div>
 </section>
 
@@ -488,23 +485,23 @@ function residentPaidStatus(r,m){
 }
 function renderResidentBalances(m){
  const rows=db.residents.filter(r=>r.active!==false).map(r=>{
-   const fee=residentTotalDue(r,m),paid=paidFor(r,m);
+   const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra,paid=paidFor(r,m);
    const prevM=monthRangeFrom(firstOperationMonth(),m).slice(-2,-1)[0];
    const previous=prevM?(residentOpeningAt(r,prevM)+residentDueThrough(r,prevM)-residentPaidThrough(r,prevM)):residentOpeningAt(r,m);
    const current=previous+fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
-   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(safeName)+'</td><td>'+money(previous)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(current)+'</td></tr>';
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(safeName)+'</td><td>'+money(previous)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(current)+'</td></tr>';
  }).join('');
- if($('resBalancesBody'))$('resBalancesBody').innerHTML=rows||'<tr><td colspan="6">لا توجد وحدات نشطة.</td></tr>';
+ if($('resBalancesBody'))$('resBalancesBody').innerHTML=rows||'<tr><td colspan="8">لا توجد وحدات نشطة.</td></tr>';
 }
 function renderResidents(){
  const m=$('residentMonth').value||currentMonth();
  $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
-   const fee=residentTotalDue(r,m),paid=paidFor(r,m),remain=fee-paid;
+   const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra,paid=paidFor(r,m),remain=fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
    const dueCount=(Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.month===m).length;
-   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="pay-res primary" data-id="'+r.id+'">تسجيل</button><button class="neutral extra-due-res" data-id="'+r.id+'">المستحقات'+(dueCount?' ('+ar(dueCount)+')':'')+'</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(fee)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
- }).join('')||'<tr><td colspan="7">لا توجد وحدات نشطة.</td></tr>';
+   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="pay-res primary" data-id="'+r.id+'">تسجيل</button><button class="neutral extra-due-res" data-id="'+r.id+'">المستحقات'+(dueCount?' ('+ar(dueCount)+')':'')+'</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
+ }).join('')||'<tr><td colspan="8">لا توجد وحدات نشطة.</td></tr>';
  renderResidentBalances(m);
  document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
  document.querySelectorAll('.extra-due-res').forEach(b=>b.onclick=()=>openResidentDues(b.dataset.id));
@@ -576,18 +573,18 @@ function renderReport(){
 function residentIncomeReport(m,subscriptionIncome,otherIncome){
  const residents=db.residents.slice().sort((a,b)=>String(a.unit||'').localeCompare(String(b.unit||''),undefined,{numeric:true}));
  let rows=residents.map(r=>{
-   const fee=residentTotalDue(r,m);
+   const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra;
    const txs=subscriptionIncome.filter(x=>(x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit));
    const paid=txs.reduce((s,x)=>s+Number(x.amount||0),0);
    const fullyPaid=fee>0 && paid>=fee;
    const date=txs.length?txs.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).slice(-1)[0].date:'—';
    const name=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
    const status=fullyPaid?'مسدد':'غير مسدد';
-   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(name)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td class="status-cell"><span class="status-dot '+(fullyPaid?'paid':'unpaid')+'"></span><span class="status-name '+(fullyPaid?'paid-text':'unpaid-text')+'">'+status+'</span></td></tr>';
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(name)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td class="status-cell"><span class="status-dot '+(fullyPaid?'paid':'unpaid')+'"></span><span class="status-name '+(fullyPaid?'paid-text':'unpaid-text')+'">'+status+'</span></td></tr>';
  }).join('');
- const other=otherIncome.map(x=>'<tr class="other-income-row"><td>—</td><td>'+escapeHtml(x.label)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+'</td><td>'+escapeHtml(x.date)+'</td><td>'+money(x.amount)+'</td><td class="status-cell">—</td></tr>').join('');
- return '<table class="print-table income-table"><thead><tr><th>الوحدة</th><th>اسم الساكن / البيان</th><th>المستحق</th><th>المبلغ المحصل</th><th>حالة السداد</th></tr></thead><tbody>'+
- (rows||'<tr><td colspan="5">لا يوجد سكان.</td></tr>')+other+'<tr class="total-row"><td colspan="3">إجمالي الإيرادات</td><td>'+money(subscriptionIncome.reduce((s,x)=>s+Number(x.amount||0),0)+otherIncome.reduce((s,x)=>s+Number(x.amount||0),0))+'</td><td></td></tr></tbody></table>';
+ const other=otherIncome.map(x=>'<tr class="other-income-row"><td>—</td><td>'+escapeHtml(x.label)+(x.unit?' — شقة '+escapeHtml(x.unit):'')+'</td><td>—</td><td>—</td><td>—</td><td>'+money(x.amount)+'</td><td class="status-cell">—</td></tr>').join('');
+ return '<table class="print-table income-table"><thead><tr><th>الوحدة</th><th>اسم الساكن / البيان</th><th>الاشتراك</th><th>مستحق إضافي</th><th>إجمالي المطلوب</th><th>المبلغ المحصل</th><th>حالة السداد</th></tr></thead><tbody>'+ 
+ (rows||'<tr><td colspan="7">لا يوجد سكان.</td></tr>')+other+'<tr class="total-row"><td colspan="5">إجمالي الإيرادات</td><td>'+money(subscriptionIncome.reduce((s,x)=>s+Number(x.amount||0),0)+otherIncome.reduce((s,x)=>s+Number(x.amount||0),0))+'</td><td></td></tr></tbody></table>';
 }
 function expenseReportRows(m){
  return db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='expense');
@@ -611,10 +608,13 @@ function renderCats(){
 }
 function renderAccounting(){
  const m=$('accMonth')?.value||currentMonth(), t=totals(m);
+ const arrearsHead=$('accArrearsBody')?.closest('table')?.querySelector('thead tr');
+ if(arrearsHead)arrearsHead.innerHTML='<th>الوحدة</th><th>الساكن</th><th>الاشتراك</th><th>مستحق إضافي</th><th>إجمالي المطلوب</th><th>المحصل</th><th>المتبقي</th>';
+ const accDueLabel=$('accDue')?.previousElementSibling;if(accDueLabel)accDueLabel.textContent='إجمالي المطلوب من السكان';
  if($('accDue')){let due=0,paid=0;db.residents.filter(r=>r.active!==false).forEach(r=>{due+=residentTotalDue(r,m);paid+=paidFor(r,m)});$('accDue').innerHTML=money(due);$('accCollected').innerHTML=money(paid);$('accExpenses').innerHTML=money(t.exp);$('accCash').innerHTML=money(t.close);$('accBookCash').value=t.close;}
  if($('accResident'))$('accResident').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>'<option value="'+r.id+'">'+escapeHtml(r.name||'بدون اسم')+' — وحدة '+escapeHtml(r.unit)+'</option>').join('');
- const rows=db.residents.filter(r=>r.active!==false).map(r=>{const due=residentTotalDue(r,m),paid=paidFor(r,m),rem=due-paid;return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>'+money(due)+'</td><td class="green">'+money(paid)+'</td><td class="'+(rem?'red':'green')+'">'+money(rem)+'</td></tr>'}).join('');
- if($('accArrearsBody'))$('accArrearsBody').innerHTML=rows||'<tr><td colspan="5">لا يوجد سكان.</td></tr>';
+ const rows=db.residents.filter(r=>r.active!==false).map(r=>{const subscription=residentFee(r,m),extra=residentExtraDue(r,m),due=subscription+extra,paid=paidFor(r,m),rem=due-paid;return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(due)+'</td><td class="green">'+money(paid)+'</td><td class="'+(rem?'red':'green')+'">'+money(rem)+'</td></tr>'}).join('');
+ if($('accArrearsBody'))$('accArrearsBody').innerHTML=rows||'<tr><td colspan="7">لا يوجد سكان.</td></tr>';
  const years=[...new Set(months(36).map(x=>x.slice(0,4)))];if($('accYear'))$('accYear').innerHTML=years.map(y=>'<option>'+y+'</option>').join('');
 }
 function openResidentOpening(){
@@ -631,11 +631,11 @@ function showAccResident(){
  if(start>end)return alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
  const fromM=start.slice(0,7),toM=end.slice(0,7);
  const ms=monthRangeFrom(fromM,toM);
- let due=0,paid=0;
+ let subscriptionTotal=0,extraTotal=0,due=0,paid=0;
  const opening=residentOpeningAt(r,fromM);
- const rows=ms.map(mm=>{const d=residentTotalDue(r,mm),p=paidFor(r,mm);due+=d;paid+=p;const bal=opening+due-paid;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(d)+'</td><td>'+money(p)+'</td><td>'+money(bal)+'</td></tr>'}).join('');
+ const rows=ms.map(mm=>{const subscription=residentFee(r,mm),extra=residentExtraDue(r,mm),d=subscription+extra,p=paidFor(r,mm);subscriptionTotal+=subscription;extraTotal+=extra;due+=d;paid+=p;const bal=opening+due-paid;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(d)+'</td><td>'+money(p)+'</td><td>'+money(bal)+'</td></tr>'}).join('');
  const finalBal=opening+due-paid;
- $('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الفترة: <b>'+start+'</b> إلى <b>'+end+'</b><br>الرصيد الافتتاحي: '+money(opening)+' — المستحق: '+money(due)+' — المحصل: '+money(paid)+' — الرصيد: '+money(finalBal)+'</div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>المستحق</th><th>المحصل</th><th>الرصيد</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+ $('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الفترة: <b>'+start+'</b> إلى <b>'+end+'</b><br>الرصيد الافتتاحي: '+money(opening)+' — الاشتراكات: '+money(subscriptionTotal)+' — المستحقات الإضافية: '+money(extraTotal)+' — إجمالي المطلوب: '+money(due)+' — المحصل: '+money(paid)+' — الرصيد: '+money(finalBal)+'</div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الاشتراك</th><th>مستحق إضافي</th><th>إجمالي المطلوب</th><th>المحصل</th><th>الرصيد</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function showAnnual(){const y=$('accYear').value, ms=months(36).filter(x=>x.startsWith(y)).reverse();let inc=0,exp=0;const rows=ms.map(m=>{const t=totals(m);inc+=t.inc;exp+=t.exp;return '<tr><td>'+fmtMonth(m)+'</td><td>'+money(t.open)+'</td><td class="green">'+money(t.inc)+'</td><td class="red">'+money(t.exp)+'</td><td>'+money(t.close)+'</td></tr>'}).join('');$('accAnnual').innerHTML='<div class="notice">إجمالي الإيرادات: <b class="green">'+money(inc)+'</b> — إجمالي المصروفات: <b class="red">'+money(exp)+'</b> — صافي الحركة: <b>'+money(inc-exp)+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الافتتاحي</th><th>الإيرادات</th><th>المصروفات</th><th>الختامي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
