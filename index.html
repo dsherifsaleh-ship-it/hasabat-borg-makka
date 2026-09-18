@@ -120,6 +120,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 .operation-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.operation-card{border:0;border-radius:18px;padding:22px 12px;font-size:17px;font-weight:900}.income-op{background:#e7f7ee;color:var(--green)}.expense-op{background:#fff0f0;color:var(--red)}.op-icon{display:block;font-size:30px;margin-bottom:7px}.accounting-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.voided{opacity:.55;text-decoration:line-through}@media(min-width:700px){.accounting-mini{grid-template-columns:repeat(4,1fr)}}
 .version-mark{font-size:11px;font-weight:900;margin-top:5px;color:#dff4ff}
 .resident-balance{font-weight:900;white-space:nowrap}.resident-balance.debit{color:var(--red)!important}.resident-balance.credit{color:var(--green)!important}.resident-balance.zero{color:#183044!important}.ledger-desc{font-weight:800}.ledger-date{white-space:nowrap}.report-actions{display:flex;gap:5px;flex-wrap:wrap}.report-actions button{padding:6px 8px;font-size:11px}
+#accounting h3:last-of-type,#accounting h3:last-of-type + .row,#accReconcile,#accounting hr:has(+ h3:last-of-type){display:none!important}
 @media print{
  .monthly-report .income-table th:nth-child(1){width:7%}
  .monthly-report .income-table th:nth-child(2){width:18%}
@@ -134,7 +135,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 <header>
 <h1>حسابات برج مكة</h1>
 <div class="sub">إدارة حسابات اتحاد الشاغلين — البيانات محفوظة على هذا الجهاز</div>
-<div class="version-mark">الإصدار ١٠ — الموجب دائن والسالب مدين</div>
+<div class="version-mark">الإصدار ١١ — حذف تسوية الخزينة</div>
 </header>
 <main>
 <nav id="nav"></nav>
@@ -274,7 +275,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 'use strict';
 
 const KEY='hasabat_borg_makka_v1';
-const VERSION=10;
+const VERSION=11;
 const $=id=>document.getElementById(id);
 const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)}};
 const today=()=>new Date().toISOString().slice(0,10);
@@ -1100,7 +1101,7 @@ if($('expenseReportTo'))$('expenseReportTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=28').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=29').catch(()=>{})}
 })();
 </script>
 </body>
