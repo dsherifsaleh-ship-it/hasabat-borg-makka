@@ -313,7 +313,7 @@ function migrate(raw){
  }));
  d.assessments=d.assessments.map(a=>({
    id:a.id||uid(),date:a.date||today(),month:a.month||(a.date||today()).slice(0,7),
-   label:String(a.label||'مستحق إضافي'),amount:Number(a.amount||0),
+   label:String(a.label||'مستحق إضافي'),amount:Number(a.amount||0),voided:!!a.voided,voidedAt:a.voidedAt||'',createdAt:a.createdAt||'',updatedAt:a.updatedAt||'',
    allocations:Array.isArray(a.allocations)?a.allocations.map(z=>({residentId:String(z.residentId||''),amount:Number(z.amount||0)})):[]
  }));
  d.gate.salary=Number(d.gate.salary||0);
@@ -420,8 +420,16 @@ function renderTransactions(){
  '<td>'+money(x.type==='expense'?-Math.abs(x.amount):x.amount)+'</td>'+
  '<td class="actions"><button class="neutral edit-tx" data-id="'+x.id+'">تعديل</button><button class="expense del-tx" data-id="'+x.id+'">حذف</button></td></tr>'
  ).join('')||'<tr><td colspan="5">لا توجد عمليات في هذا الشهر.</td></tr>';
- document.querySelectorAll('.edit-tx').forEach(b=>b.onclick=()=>openTx(db.tx.find(x=>x.id===b.dataset.id)?.type,b.dataset.id));
- document.querySelectorAll('.del-tx').forEach(b=>b.onclick=()=>deleteTx(b.dataset.id));
+ document.querySelectorAll('.edit-tx').forEach(b=>b.onclick=()=>{
+   const x=db.tx.find(z=>z.id===b.dataset.id);
+   if(x?.type==='assessment')openDistributeDue(String(x.id).replace(/^tx-/,''));
+   else openTx(x?.type,b.dataset.id);
+ });
+ document.querySelectorAll('.del-tx').forEach(b=>b.onclick=()=>{
+   const x=db.tx.find(z=>z.id===b.dataset.id);
+   if(x?.type==='assessment')cancelAssessment(String(x.id).replace(/^tx-/,''));
+   else deleteTx(b.dataset.id);
+ });
 }
 function renderSuppliers(){
  const rows=db.suppliers.filter(x=>x.active!==false).map(x=>'<tr><td>'+escapeHtml(x.name)+'</td><td>'+escapeHtml(x.type)+'</td><td>'+escapeHtml(x.phone||'—')+'</td><td class="actions"><button class="neutral edit-supplier" data-id="'+x.id+'">تعديل</button><button class="expense del-supplier" data-id="'+x.id+'">إلغاء</button></td></tr>').join('');
@@ -516,10 +524,13 @@ function renderResidents(){
  document.querySelectorAll('.extra-due-res').forEach(b=>b.onclick=()=>openResidentExtraDue(b.dataset.id));
  document.querySelectorAll('.edit-res').forEach(b=>b.onclick=()=>openResident(b.dataset.id));
 }
-function openDistributeDue(){
- const residents=db.residents.filter(r=>r.active!==false);
- if(!residents.length)return alert('لا يوجد سكان نشطون.');
- $('sheet').innerHTML='<h2>توزيع مستحق إجمالي</h2><div class="notice">أدخل إجمالي المستحق. سيقسم بالتساوي على السكان، ويمكن تعديل نصيب أي ساكن قبل الحفظ. يجب أن يساوي مجموع التوزيع الإجمالي.</div><label>التاريخ</label><input id="bulkDueDate" type="date" value="'+today()+'"><label>بيان المستحق</label><input id="bulkDueLabel" value="مستحق إضافي"><label>الإجمالي</label><input id="bulkDueTotal" type="number" min="0" step="0.01" inputmode="decimal"><div id="bulkAllocations" style="margin-top:10px"></div><div id="bulkCheck" class="notice"></div><div class="row"><button class="primary" id="saveBulkDue">اعتماد المستحق</button><button class="neutral" id="cancelBulkDue">إلغاء</button></div>';
+function openDistributeDue(editId){
+ const old=editId?db.assessments.find(a=>a.id===editId):null;
+ const residentIds=old&&Array.isArray(old.allocations)?old.allocations.map(a=>a.residentId):[];
+ const residents=db.residents.filter(r=>r.active!==false||residentIds.includes(r.id));
+ if(!residents.length)return alert('لا يوجد سكان.');
+ const oldMap={};if(old)old.allocations.forEach(a=>oldMap[a.residentId]=Number(a.amount||0));
+ $('sheet').innerHTML='<h2>'+(old?'تعديل المستحق الإجمالي':'توزيع مستحق إجمالي')+'</h2><div class="notice">'+(old?'يمكن تعديل الإجمالي أو البيان أو التاريخ أو نصيب أي ساكن. لن تُنشأ عملية جديدة؛ سيتم تحديث نفس المستحق وتوزيعه.':'أدخل إجمالي المستحق. سيقسم بالتساوي على السكان، ويمكن تعديل نصيب أي ساكن قبل الحفظ.')+' يجب أن يساوي مجموع التوزيع الإجمالي.</div><label>التاريخ</label><input id="bulkDueDate" type="date" value="'+escapeAttr(old?.date||today())+'"><label>بيان المستحق</label><input id="bulkDueLabel" value="'+escapeAttr(old?.label||'مستحق إضافي')+'"><label>الإجمالي</label><input id="bulkDueTotal" type="number" min="0" step="0.01" inputmode="decimal" value="'+(old?Number(old.amount||0):'')+'"><div id="bulkAllocations" style="margin-top:10px"></div><div id="bulkCheck" class="notice"></div><div class="row"><button class="primary" id="saveBulkDue">'+(old?'حفظ التعديل':'اعتماد المستحق')+'</button><button class="neutral" id="cancelBulkDue">إلغاء</button></div>';
  const check=()=>{
    const total=Number($('bulkDueTotal').value||0);
    const sum=[...document.querySelectorAll('.bulk-alloc')].reduce((a,x)=>a+Number(x.value||0),0);
@@ -527,28 +538,46 @@ function openDistributeDue(){
    $('bulkCheck').innerHTML='الإجمالي: <b>'+money(total)+'</b> — مجموع التوزيع: <b>'+money(sum)+'</b> — الفرق: <b>'+money(diff)+'</b>';
    return {total,sum,diff};
  };
- const draw=()=>{
+ const draw=(redistribute=false)=>{
    const total=Number($('bulkDueTotal').value||0),base=residents.length?Math.floor((total/residents.length)*100)/100:0;
    let used=0;
    $('bulkAllocations').innerHTML='<table><thead><tr><th>الوحدة</th><th>الساكن</th><th>المبلغ</th></tr></thead><tbody>'+residents.map((r,i)=>{
-     let a=i===residents.length-1?Math.round((total-used)*100)/100:base;used+=a;
-     return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td><input class="bulk-alloc" data-id="'+r.id+'" type="number" min="0" step="0.01" value="'+a+'"></td></tr>';
+     let amount;
+     if(old&&!redistribute) amount=Number(oldMap[r.id]||0);
+     else {amount=i===residents.length-1?Math.round((total-used)*100)/100:base;used+=amount;}
+     return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td><input class="bulk-alloc" data-id="'+r.id+'" type="number" min="0" step="0.01" value="'+amount+'"></td></tr>';
    }).join('')+'</tbody></table>';
    document.querySelectorAll('.bulk-alloc').forEach(x=>x.oninput=check);check();
  };
- $('bulkDueTotal').oninput=draw;draw();
+ $('bulkDueTotal').oninput=()=>draw(true);draw(false);
  $('saveBulkDue').onclick=()=>{
    const {total,diff}=check(),date=$('bulkDueDate').value,label=$('bulkDueLabel').value.trim()||'مستحق إضافي';
    if(!(total>0))return alert('أدخل إجماليًا صحيحًا');
    if(!date)return alert('اختر التاريخ');
    if(Math.abs(diff)>0.009)return alert('مجموع توزيع السكان يجب أن يساوي إجمالي المستحق.');
-   const id=uid(),allocations=[...document.querySelectorAll('.bulk-alloc')].map(x=>({residentId:x.dataset.id,amount:Number(x.value||0)}));
+   const id=old?old.id:uid();
+   const allocations=[...document.querySelectorAll('.bulk-alloc')].map(x=>({residentId:x.dataset.id,amount:Number(x.value||0)}));
+   if(old){
+     db.residents.forEach(r=>{r.extraDues=(Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.assessmentId!==id);});
+     old.date=date;old.month=date.slice(0,7);old.label=label;old.amount=total;old.allocations=allocations;old.updatedAt=new Date().toISOString();
+     const tx=db.tx.find(x=>x.id==='tx-'+id);
+     if(tx){tx.date=date;tx.month=date.slice(0,7);tx.label='مستحق إضافي — '+label;tx.amount=total;tx.note='إجمالي مستحق موزع على السكان';tx.voided=false;}
+   }else{
+     db.assessments.push({id,date,month:date.slice(0,7),label,amount:total,allocations,createdAt:new Date().toISOString()});
+     db.tx.push({id:'tx-'+id,date,month:date.slice(0,7),type:'assessment',label:'مستحق إضافي — '+label,amount:total,note:'إجمالي مستحق موزع على السكان',unit:'',residentId:'',residentName:'',funderId:'',funderName:'',supplierId:'',supplierName:'',paymentMethod:'غير نقدي',voucherNo:'',voided:false});
+   }
    allocations.forEach(a=>{const r=db.residents.find(z=>z.id===a.residentId);if(r&&a.amount>0){r.extraDues=Array.isArray(r.extraDues)?r.extraDues:[];r.extraDues.push({id:uid(),assessmentId:id,date,month:date.slice(0,7),label,amount:a.amount,note:'توزيع مستحق إجمالي'});}});
-   db.assessments.push({id,date,month:date.slice(0,7),label,amount:total,allocations});
-   db.tx.push({id:'tx-'+id,date,month:date.slice(0,7),type:'assessment',label:'مستحق إضافي — '+label,amount:total,note:'إجمالي مستحق موزع على السكان',unit:'',residentId:'',residentName:'',funderId:'',funderName:'',supplierId:'',supplierName:'',paymentMethod:'غير نقدي',voucherNo:'',voided:false});
    save();closeModal();renderAll();
  };
  $('cancelBulkDue').onclick=closeModal;openModal();
+}
+function cancelAssessment(id){
+ const a=db.assessments.find(x=>x.id===id);if(!a)return;
+ if(!confirm('إلغاء هذا المستحق الإجمالي؟ سيتم إلغاء توزيعه من حسابات السكان مع الاحتفاظ بالعملية في سجل العمليات للمراجعة.'))return;
+ db.residents.forEach(r=>{r.extraDues=(Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.assessmentId!==id);});
+ a.voided=true;a.voidedAt=new Date().toISOString();
+ const tx=db.tx.find(x=>x.id==='tx-'+id);if(tx){tx.voided=true;tx.voidedAt=a.voidedAt;}
+ save();renderAll();
 }
 function renderGate(){
  const a=db.gate.ops.filter(x=>x.kind==='advance').reduce((s,x)=>s+x.amount,0);
@@ -990,7 +1019,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=24').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=25').catch(()=>{})}
 })();
 </script>
 </body>
