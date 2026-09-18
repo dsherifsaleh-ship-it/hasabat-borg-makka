@@ -118,12 +118,23 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 .operation-card.expense-op{background:#fff0f0;color:var(--red)}
 @media(max-width:480px){.operation-cards{grid-template-columns:1fr 1fr}.operation-card{padding:20px 8px}}
 .operation-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.operation-card{border:0;border-radius:18px;padding:22px 12px;font-size:17px;font-weight:900}.income-op{background:#e7f7ee;color:var(--green)}.expense-op{background:#fff0f0;color:var(--red)}.op-icon{display:block;font-size:30px;margin-bottom:7px}.accounting-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.voided{opacity:.55;text-decoration:line-through}@media(min-width:700px){.accounting-mini{grid-template-columns:repeat(4,1fr)}}
+.version-mark{font-size:11px;font-weight:900;margin-top:5px;color:#dff4ff}
+@media print{
+ .monthly-report .income-table th:nth-child(1){width:7%}
+ .monthly-report .income-table th:nth-child(2){width:23%}
+ .monthly-report .income-table th:nth-child(3){width:12%}
+ .monthly-report .income-table th:nth-child(4){width:12%}
+ .monthly-report .income-table th:nth-child(5){width:14%}
+ .monthly-report .income-table th:nth-child(6){width:15%}
+ .monthly-report .income-table th:nth-child(7){width:17%}
+}
 </style>
 </head>
 <body>
 <header>
 <h1>حسابات برج مكة</h1>
 <div class="sub">إدارة حسابات اتحاد الشاغلين — البيانات محفوظة على هذا الجهاز</div>
+<div class="version-mark">الإصدار ٦ — فصل الاشتراك عن المستحق الإضافي</div>
 </header>
 <main>
 <nav id="nav"></nav>
@@ -257,7 +268,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 'use strict';
 
 const KEY='hasabat_borg_makka_v1';
-const VERSION=5;
+const VERSION=6;
 const $=id=>document.getElementById(id);
 const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)}};
 const today=()=>new Date().toISOString().slice(0,10);
@@ -984,7 +995,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=23').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=24').catch(()=>{})}
 })();
 </script>
 </body>
