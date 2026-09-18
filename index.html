@@ -134,7 +134,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 <header>
 <h1>حسابات برج مكة</h1>
 <div class="sub">إدارة حسابات اتحاد الشاغلين — البيانات محفوظة على هذا الجهاز</div>
-<div class="version-mark">الإصدار ٧ — تسديد مستقل للاشتراك والمستحقات</div>
+<div class="version-mark">الإصدار ٨ — تصحيح الأرصدة السابقة للسكان</div>
 </header>
 <main>
 <nav id="nav"></nav>
@@ -268,7 +268,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 'use strict';
 
 const KEY='hasabat_borg_makka_v1';
-const VERSION=7;
+const VERSION=8;
 const $=id=>document.getElementById(id);
 const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)}};
 const today=()=>new Date().toISOString().slice(0,10);
@@ -392,8 +392,9 @@ function extraDuePaid(dueId){
 }
 function residentTotalDue(r,m){return residentFee(r,m)+residentExtraDue(r,m)}
 function residentExtraDueLabels(r,m){return (Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.month===m).map(d=>d.label+(d.note?' — '+d.note:'')).join('، ')}
+function isResidentSettlementTx(x){return !!x.extraDueId||String(x.label||'').startsWith('اشتراك شهري')||String(x.label||'').startsWith('تسديد (')}
 function paidFor(r,m){
- return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month===m&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
+ return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month===m&&isResidentSettlementTx(x)&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
 }
 function subscriptionPaidFor(r,m){
  return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month===m&&!x.extraDueId&&String(x.label||'').startsWith('اشتراك شهري')&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
@@ -466,10 +467,14 @@ function funderOptions(includeResidents=true){
 
 function residentStartMonth(r){
  const hist=Array.isArray(r.feeHistory)?r.feeHistory.filter(h=>h&&h.month).map(h=>String(h.month)).sort():[];
- return hist[0]||currentMonth();
+ const payments=db.tx.filter(x=>!x.voided&&x.type==='income'&&isResidentSettlementTx(x)&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).map(x=>String(x.month||(x.date||'').slice(0,7))).filter(Boolean);
+ const dues=(Array.isArray(r.extraDues)?r.extraDues:[]).map(d=>String(d.month||(d.date||'').slice(0,7))).filter(Boolean);
+ const openings=Object.keys(r.openingBalances||{});
+ return hist.concat(payments,dues,openings).filter(Boolean).sort()[0]||currentMonth();
 }
 function residentPaidThrough(r,m){
- return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month<=m&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
+ const start=residentStartMonth(r);
+ return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month>=start&&x.month<=m&&isResidentSettlementTx(x)&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
 }
 function residentDueThrough(r,m){
  const start=residentStartMonth(r);
@@ -492,9 +497,14 @@ function residentOpeningAt(r,m){
  return Number(entries[entries.length-1][1]||0);
 }
 function residentBalanceThrough(r,m){
- const start=firstOperationMonth();
+ const start=residentStartMonth(r);
+ if(m<start)return 0;
  const opening=residentOpeningAt(r,start);
  return opening+residentDueThrough(r,m)-residentPaidThrough(r,m);
+}
+function previousMonth(m){
+ const [y,mo]=String(m).split('-').map(Number);if(!y||!mo)return '';
+ const d=new Date(y,mo-2,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
 function residentPaidStatus(r,m){
  const fee=residentTotalDue(r,m),paid=paidFor(r,m);
@@ -503,8 +513,8 @@ function residentPaidStatus(r,m){
 function renderResidentBalances(m){
  const rows=db.residents.filter(r=>r.active!==false).map(r=>{
    const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra,paid=paidFor(r,m);
-   const prevM=monthRangeFrom(firstOperationMonth(),m).slice(-2,-1)[0];
-   const previous=prevM?(residentOpeningAt(r,prevM)+residentDueThrough(r,prevM)-residentPaidThrough(r,prevM)):residentOpeningAt(r,m);
+   const prevM=previousMonth(m);
+   const previous=prevM?residentBalanceThrough(r,prevM):0;
    const current=previous+fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
    return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(safeName)+'</td><td>'+money(previous)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(current)+'</td></tr>';
@@ -649,7 +659,7 @@ function showAccResident(){
  const fromM=start.slice(0,7),toM=end.slice(0,7);
  const ms=monthRangeFrom(fromM,toM);
  let subscriptionTotal=0,extraTotal=0,due=0,paid=0;
- const opening=residentOpeningAt(r,fromM);
+ const opening=Object.prototype.hasOwnProperty.call(r.openingBalances||{},fromM)?Number(r.openingBalances[fromM]||0):residentBalanceThrough(r,previousMonth(fromM));
  const rows=ms.map(mm=>{const subscription=residentFee(r,mm),extra=residentExtraDue(r,mm),d=subscription+extra,p=paidFor(r,mm);subscriptionTotal+=subscription;extraTotal+=extra;due+=d;paid+=p;const bal=opening+due-paid;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(d)+'</td><td>'+money(p)+'</td><td>'+money(bal)+'</td></tr>'}).join('');
  const finalBal=opening+due-paid;
  $('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الفترة: <b>'+start+'</b> إلى <b>'+end+'</b><br>الرصيد الافتتاحي: '+money(opening)+' — الاشتراكات: '+money(subscriptionTotal)+' — المستحقات الإضافية: '+money(extraTotal)+' — إجمالي المطلوب: '+money(due)+' — المحصل: '+money(paid)+' — الرصيد: '+money(finalBal)+'</div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الاشتراك</th><th>مستحق إضافي</th><th>إجمالي المطلوب</th><th>المحصل</th><th>الرصيد</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -1024,7 +1034,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=25').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=26').catch(()=>{})}
 })();
 </script>
 </body>
