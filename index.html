@@ -134,7 +134,7 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 <header>
 <h1>حسابات برج مكة</h1>
 <div class="sub">إدارة حسابات اتحاد الشاغلين — البيانات محفوظة على هذا الجهاز</div>
-<div class="version-mark">الإصدار ٦ — فصل الاشتراك عن المستحق الإضافي</div>
+<div class="version-mark">الإصدار ٧ — تسديد مستقل للاشتراك والمستحقات</div>
 </header>
 <main>
 <nav id="nav"></nav>
@@ -268,14 +268,14 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 'use strict';
 
 const KEY='hasabat_borg_makka_v1';
-const VERSION=6;
+const VERSION=7;
 const $=id=>document.getElementById(id);
 const uid=()=>{try{return crypto.randomUUID()}catch(e){return 'id-'+Date.now()+'-'+Math.random().toString(16).slice(2)}};
 const today=()=>new Date().toISOString().slice(0,10);
 const currentMonth=()=>today().slice(0,7);
 const ar=n=>Number(n||0).toLocaleString('ar-EG');
 const moneyText=n=>ar(n)+' ج.م';
-const money=n=>{const v=Number(n||0);const cls=v>0?'amount-positive':v<0?'amount-negative':'amount-zero';return '<span class="'+cls+'">'+ar(v)+' ج.م</span>';};
+const money=n=>{const v=Number(n||0);const cls=v>0?'amount-positive':v<0?'amount-negative':'amount-zero';const shown=v<0?'- '+ar(Math.abs(v)):ar(v);return '<span class="'+cls+'">'+shown+' ج.م</span>';};
 
 const defaultCats={
  income:['اشتراك شهري','متأخرات','إيراد خدمات','إيراد آخر'],
@@ -303,7 +303,7 @@ function migrate(raw){
  d.tx=d.tx.map(x=>({
    id:x.id||uid(),date:x.date||today(),month:x.month||(x.date||today()).slice(0,7),
    type:x.type==='income'?'income':'expense',label:String(x.label||'عملية'),amount:Number(x.amount||0),
-   note:String(x.note||''),unit:x.unit!=null?String(x.unit):'',residentId:x.residentId||'',residentName:x.residentName||'',funderId:x.funderId||'',funderName:x.funderName||'',supplierId:x.supplierId||'',supplierName:x.supplierName||'',paymentMethod:x.paymentMethod||'نقدي',voucherNo:x.voucherNo||'',voided:!!x.voided
+   note:String(x.note||''),unit:x.unit!=null?String(x.unit):'',residentId:x.residentId||'',residentName:x.residentName||'',funderId:x.funderId||'',funderName:x.funderName||'',supplierId:x.supplierId||'',supplierName:x.supplierName||'',paymentMethod:x.paymentMethod||'نقدي',voucherNo:x.voucherNo||'',extraDueId:x.extraDueId||'',paymentKind:x.paymentKind||'',voided:!!x.voided
  }));
  d.funders=d.funders.map(f=>({id:f.id||uid(),name:String(f.name||''),type:String(f.type||'جهة/شخص'),phone:String(f.phone||''),active:f.active!==false}));
  d.suppliers=d.suppliers.map(f=>({id:f.id||uid(),name:String(f.name||''),type:String(f.type||'مورد'),phone:String(f.phone||''),active:f.active!==false}));
@@ -387,10 +387,16 @@ function residentFee(r,m){
 function residentExtraDue(r,m){
  return (Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.month===m).reduce((sum,d)=>sum+Number(d.amount||0),0);
 }
+function extraDuePaid(dueId){
+ return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.extraDueId===dueId).reduce((sum,x)=>sum+Number(x.amount||0),0);
+}
 function residentTotalDue(r,m){return residentFee(r,m)+residentExtraDue(r,m)}
 function residentExtraDueLabels(r,m){return (Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.month===m).map(d=>d.label+(d.note?' — '+d.note:'')).join('، ')}
 function paidFor(r,m){
  return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month===m&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
+}
+function subscriptionPaidFor(r,m){
+ return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month===m&&!x.extraDueId&&String(x.label||'').startsWith('اشتراك شهري')&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((s,x)=>s+Number(x.amount||0),0);
 }
 function nav(){
  const items=[['dashboard','الرئيسية'],['newOperation','＋ عملية جديدة'],['transactions','العمليات'],['residents','السكان'],['funders','الممولون'],['suppliers','الموردون'],['gate','البواب'],['reports','التقارير'],['accounting','الحسابات'],['settings','الإعدادات']];
@@ -511,7 +517,7 @@ function renderResidents(){
    const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra,paid=paidFor(r,m),remain=fee-paid;
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
    const dueCount=(Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.month===m).length;
-   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="pay-res primary" data-id="'+r.id+'">تسجيل</button><button class="neutral extra-due-res" data-id="'+r.id+'">المستحقات'+(dueCount?' ('+ar(dueCount)+')':'')+'</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
+   const paidStatus=residentPaidStatus(r,m); return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="pay-res primary" data-id="'+r.id+'">الاشتراك</button><button class="neutral extra-due-res" data-id="'+r.id+'">المستحقات'+(dueCount?' ('+ar(dueCount)+')':'')+'</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(fee)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
  }).join('')||'<tr><td colspan="8">لا توجد وحدات نشطة.</td></tr>';
  renderResidentBalances(m);
  document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
@@ -561,8 +567,8 @@ function printReportPage(){
 function renderReport(){
  const m=$('reportMonth').value||currentMonth(),t=totals(m);
  const allIncome=db.tx.filter(x=>!x.voided&&x.month===m&&x.type==='income');
- const subscriptionIncome=allIncome.filter(x=>String(x.label||'').startsWith('اشتراك شهري'));
- const otherIncome=allIncome.filter(x=>!String(x.label||'').startsWith('اشتراك شهري'));
+ const subscriptionIncome=allIncome.filter(x=>String(x.label||'').startsWith('اشتراك شهري')||x.extraDueId);
+ const otherIncome=allIncome.filter(x=>!String(x.label||'').startsWith('اشتراك شهري')&&!x.extraDueId);
  const valClass=n=>Number(n||0)<0?'negative':Number(n||0)>0?'positive':'';
  $('report').innerHTML='<div class="monthly-report">'+
  '<div class="report-head">'+
@@ -716,7 +722,7 @@ function saveTx(type,id){
  const amount=Number($('fAmount').value||0),date=$('fDate').value;
  if(!date)return alert('اختر التاريخ');
  if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');
- const oldTx=id?db.tx.find(x=>x.id===id):null; const o={id:id||uid(),date,month:date.slice(0,7),type,label:$('fCat').value,amount,note:$('fNote').value.trim(),unit:oldTx?.unit||'',residentId:oldTx?.residentId||'',residentName:oldTx?.residentName||'',funderId:oldTx?.funderId||'',funderName:oldTx?.funderName||'',supplierId:oldTx?.supplierId||'',supplierName:oldTx?.supplierName||'',paymentMethod:oldTx?.paymentMethod||'نقدي',voucherNo:oldTx?.voucherNo||((type==='income'?'قبض-':'صرف-')+String(db.tx.filter(x=>x.type===type).length+1).padStart(5,'0'))};
+ const oldTx=id?db.tx.find(x=>x.id===id):null; const o={id:id||uid(),date,month:date.slice(0,7),type,label:$('fCat').value,amount,note:$('fNote').value.trim(),unit:oldTx?.unit||'',residentId:oldTx?.residentId||'',residentName:oldTx?.residentName||'',funderId:oldTx?.funderId||'',funderName:oldTx?.funderName||'',supplierId:oldTx?.supplierId||'',supplierName:oldTx?.supplierName||'',paymentMethod:oldTx?.paymentMethod||'نقدي',voucherNo:oldTx?.voucherNo||((type==='income'?'قبض-':'صرف-')+String(db.tx.filter(x=>x.type===type).length+1).padStart(5,'0')),extraDueId:oldTx?.extraDueId||'',paymentKind:oldTx?.paymentKind||''};
  if(id)db.tx=db.tx.map(x=>x.id===id?o:x);else db.tx.push(o);
  save();closeModal();renderAll();
 }
@@ -768,12 +774,13 @@ function openResidentDues(id){
  const r=db.residents.find(x=>x.id===id); if(!r)return;
  const m=$('residentMonth').value||currentMonth();
  const dues=(Array.isArray(r.extraDues)?r.extraDues:[]).filter(d=>d.month===m).sort((a,b)=>String(a.date).localeCompare(String(b.date)));
- const rows=dues.map(d=>'<tr><td>'+escapeHtml(d.date)+'</td><td>'+escapeHtml(d.label)+(d.note?'<div class="small">'+escapeHtml(d.note)+'</div>':'')+'</td><td>'+money(d.amount)+'</td><td class="actions"><button class="neutral edit-extra-due" data-due-id="'+d.id+'">تعديل</button><button class="expense delete-extra-due" data-due-id="'+d.id+'">حذف</button></td></tr>').join('');
+ const rows=dues.map(d=>{const paid=extraDuePaid(d.id),remaining=Number(d.amount||0)-paid;return '<tr><td>'+escapeHtml(d.date)+'</td><td>'+escapeHtml(d.label)+(d.note?'<div class="small">'+escapeHtml(d.note)+'</div>':'')+'</td><td>'+money(d.amount)+'</td><td>'+money(paid)+'</td><td>'+money(remaining)+'</td><td class="actions">'+(remaining>0?'<button class="primary pay-extra-due" data-due-id="'+d.id+'">تسديد</button>':'<span class="paid-text">مسدد</span>')+' <button class="neutral edit-extra-due" data-due-id="'+d.id+'">تعديل</button><button class="expense delete-extra-due" data-due-id="'+d.id+'">حذف</button></td></tr>'}).join('');
  $('sheet').innerHTML='<h2>إدارة مستحقات الساكن</h2><div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الشهر: <b>'+fmtMonth(m)+'</b>. تعديل أو حذف المستحق هنا يحدّث حساب الساكن والتقارير فورًا.</div>'+ 
- '<div style="overflow:auto"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المبلغ</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="4">لا توجد مستحقات إضافية في هذا الشهر.</td></tr>')+'</tbody></table></div>'+ 
+ '<div style="overflow:auto"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>المستحق</th><th>المسدد</th><th>المتبقي</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="6">لا توجد مستحقات إضافية في هذا الشهر.</td></tr>')+'</tbody></table></div>'+ 
  '<div class="row" style="margin-top:12px"><button class="primary" id="addExtraDue">＋ إضافة مستحق جديد</button><button class="neutral" id="closeResidentDues">إغلاق</button></div>';
  document.querySelectorAll('.edit-extra-due').forEach(b=>b.onclick=()=>openResidentExtraDue(id,b.dataset.dueId));
  document.querySelectorAll('.delete-extra-due').forEach(b=>b.onclick=()=>deleteResidentExtraDue(id,b.dataset.dueId));
+ document.querySelectorAll('.pay-extra-due').forEach(b=>b.onclick=()=>payResidentExtraDue(id,b.dataset.dueId));
  $('addExtraDue').onclick=()=>openResidentExtraDue(id);
  $('closeResidentDues').onclick=closeModal;
  openModal();
@@ -793,6 +800,7 @@ function openResidentExtraDue(id,dueId){
  $('saveExtraDue').onclick=()=>{
    const amount=Number($('extraDueAmount').value||0),date=$('extraDueDate').value,label=$('extraDueLabel').value.trim()||'مستحق طارئ',note=$('extraDueNote').value.trim();
    if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');if(!date)return alert('اختر التاريخ');
+   if(old&&amount<extraDuePaid(dueId))return alert('لا يمكن جعل قيمة المستحق أقل من المبلغ الذي تم تسديده عليه.');
    const month=date.slice(0,7);
    const duplicate=r.extraDues.some(d=>d.id!==dueId&&d.month===month&&Number(d.amount||0)===amount&&String(d.label||'').trim()===label);
    if(duplicate&&!confirm('يوجد مستحق مطابق لنفس الساكن في هذا الشهر. هل تريد تسجيله مرة أخرى رغم ذلك؟'))return;
@@ -805,13 +813,34 @@ function openResidentExtraDue(id,dueId){
 function deleteResidentExtraDue(id,dueId){
  const r=db.residents.find(x=>x.id===id);if(!r)return;
  const due=(Array.isArray(r.extraDues)?r.extraDues:[]).find(d=>d.id===dueId);if(!due)return;
+ if(extraDuePaid(dueId)>0)return alert('لا يمكن حذف هذا المستحق لأن له مبالغ مسددة. احذف عملية التسديد المرتبطة به أولًا من شاشة العمليات.');
  if(!confirm('حذف المستحق «'+due.label+'» بمبلغ '+ar(due.amount)+' ج.م؟ سيتم حذفه من حساب الساكن وجميع التقارير.'))return;
  r.extraDues=r.extraDues.filter(d=>d.id!==dueId);save();closeModal();renderAll();
 }
+function payResidentExtraDue(id,dueId){
+ const r=db.residents.find(x=>x.id===id);if(!r)return;
+ const due=(Array.isArray(r.extraDues)?r.extraDues:[]).find(d=>d.id===dueId);if(!due)return;
+ const paid=extraDuePaid(dueId),remaining=Number(due.amount||0)-paid;
+ if(remaining<=0)return alert('تم تسديد هذا المستحق بالكامل.');
+ const residentName=String(r.name||'بدون اسم').trim()||'بدون اسم';
+ $('sheet').innerHTML='<h2>تسديد مستحق</h2><div class="notice"><b>'+escapeHtml(residentName)+'</b> — وحدة '+escapeHtml(r.unit)+'<br>المستحق: <b>'+escapeHtml(due.label)+'</b><br>القيمة: '+money(due.amount)+' — المسدد: '+money(paid)+' — المتبقي: '+money(remaining)+'</div>'+ 
+ '<label>المبلغ المسدد</label><input id="extraDuePayAmount" type="number" min="0" max="'+remaining+'" step="0.01" inputmode="decimal" value="'+remaining+'">'+
+ '<label>التاريخ</label><input id="extraDuePayDate" type="date" value="'+today()+'">'+
+ '<label>الوصف</label><input id="extraDuePayDescription" value="'+escapeAttr('تسديد ('+due.label+')')+'" readonly>'+ 
+ '<div class="row"><button class="primary" id="saveExtraDuePay">تسجيل التسديد</button><button class="neutral" id="cancelExtraDuePay">إلغاء</button></div>';
+ $('saveExtraDuePay').onclick=()=>{
+   const amount=Number($('extraDuePayAmount').value||0),date=$('extraDuePayDate').value;
+   if(!(amount>0))return alert('أدخل مبلغًا صحيحًا');if(amount>remaining)return alert('المبلغ أكبر من المتبقي على المستحق.');if(!date)return alert('اختر التاريخ');
+   const label='تسديد ('+due.label+')';
+   db.tx.push({id:uid(),date,month:date.slice(0,7),type:'income',label,amount,note:label,unit:String(r.unit),residentId:r.id,residentName,paymentMethod:'نقدي',voucherNo:'قبض-'+String(db.tx.filter(x=>x.type==='income').length+1).padStart(5,'0'),extraDueId:due.id,paymentKind:'extra_due',voided:false});
+   save();closeModal();renderAll();
+ };
+ $('cancelExtraDuePay').onclick=()=>openResidentDues(id);openModal();
+}
 function payResident(id){
- const r=db.residents.find(x=>x.id===id),m=$('residentMonth').value||currentMonth(),fee=residentTotalDue(r,m),paid=paidFor(r,m);
+ const r=db.residents.find(x=>x.id===id),m=$('residentMonth').value||currentMonth(),fee=residentFee(r,m),paid=subscriptionPaidFor(r,m);
  const residentName=(r&&r.name!==undefined&&r.name!==null&&String(r.name).trim()!==''&&String(r.name).trim().toLowerCase()!=='undefined')?String(r.name).trim():'بدون اسم';
- $('sheet').innerHTML='<h2>تحصيل من شقة '+escapeHtml(r.unit)+'</h2><div class="notice"><b>اسم الساكن: '+escapeHtml(residentName)+'</b><br>الوحدة: <b>'+escapeHtml(r.unit)+'</b><br>الاشتراك: <b>'+money(residentFee(r,m))+'</b> — مستحقات طارئة: <b>'+money(residentExtraDue(r,m))+'</b><br>إجمالي المطلوب في '+fmtMonth(m)+': <b>'+money(fee)+'</b> — المحصل: <b>'+money(paid)+'</b> — المتبقي: <b>'+money(fee-paid)+'</b></div>'+
+ $('sheet').innerHTML='<h2>تسديد الاشتراك الشهري</h2><div class="notice"><b>اسم الساكن: '+escapeHtml(residentName)+'</b><br>الوحدة: <b>'+escapeHtml(r.unit)+'</b><br>الاشتراك فقط في '+fmtMonth(m)+': <b>'+money(fee)+'</b> — المسدد: <b>'+money(paid)+'</b> — المتبقي: <b>'+money(fee-paid)+'</b><br>المستحقات الإضافية تُسدَّد من زر «المستحقات» بصورة مستقلة.</div>'+ 
  '<label>المبلغ المدفوع</label><input id="payAmount" type="number" min="0" step="0.01" inputmode="decimal" value="'+Math.max(0,fee-paid)+'">'+
  '<label>التاريخ</label><input id="payDate" type="date" value="'+today()+'">'+
  '<label>البيان</label><input id="payNote" value="تحصيل من ساكن">'+
@@ -995,7 +1024,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=24').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=25').catch(()=>{})}
 })();
 </script>
 </body>
