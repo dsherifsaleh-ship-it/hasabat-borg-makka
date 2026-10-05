@@ -497,8 +497,7 @@ function residentBalanceThrough(r,m){
  return opening+residentDueThrough(r,m)-residentPaidThrough(r,m);
 }
 function residentPaidStatus(r,m){
- const fee=residentTotalDue(r,m),paid=paidFor(r,m);
- return fee>0&&paid>=fee;
+ return residentBalanceThrough(r,m)<=0.005;
 }
 function renderResidentBalances(m){
  const rows=db.residents.filter(r=>r.active!==false).map(r=>{
@@ -514,10 +513,10 @@ function renderResidentBalances(m){
 function renderResidents(){
  const m=$('residentMonth').value||currentMonth();
  $('resBody').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>{
-   const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra,paid=paidFor(r,m),remain=fee-paid;
+   const subscription=residentFee(r,m),extra=residentExtraDue(r,m),paid=paidFor(r,m),remain=residentBalanceThrough(r,m);
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
    const paidStatus=residentPaidStatus(r,m);
-   return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">تحصيل</div><div class="resident-actions"><button class="pay-res primary" data-id="'+r.id+'">تسجيل</button><button class="neutral extra-due-res" data-id="'+r.id+'">＋ مستحق</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
+   return '<tr><td class="resident-unit">'+escapeHtml(r.unit)+'</td><td><div class="resident-name">'+escapeHtml(safeName)+'</div><div class="collection-status '+(paidStatus?'paid':'unpaid')+'">'+(paidStatus?'مسدد بالكامل':'متبقي '+money(Math.max(0,remain)))+'</div><div class="resident-actions"><button class="pay-res primary" data-id="'+r.id+'">تسجيل</button><button class="neutral extra-due-res" data-id="'+r.id+'">＋ مستحق</button><button class="neutral edit-res" data-id="'+r.id+'">تعديل</button></div></td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td>'+money(remain)+'</td><td></td></tr>';
  }).join('')||'<tr><td colspan="7">لا توجد وحدات نشطة.</td></tr>';
  renderResidentBalances(m);
  document.querySelectorAll('.pay-res').forEach(b=>b.onclick=()=>payResident(b.dataset.id));
@@ -645,10 +644,10 @@ function renderReport(){
 function residentIncomeReport(m,subscriptionIncome,otherIncome){
  const residents=db.residents.slice().sort((a,b)=>String(a.unit||'').localeCompare(String(b.unit||''),undefined,{numeric:true}));
  let rows=residents.map(r=>{
-   const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra,paid=paidFor(r,m);
-   const fullyPaid=fee>0&&paid>=fee;
+   const subscription=residentFee(r,m),extra=residentExtraDue(r,m),paid=paidFor(r,m),balance=residentBalanceThrough(r,m);
+   const fullyPaid=balance<=0.005;
    const name=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
-   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(name)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td class="status-cell"><span class="status-dot '+(fullyPaid?'paid':'unpaid')+'"></span><span class="status-name '+(fullyPaid?'paid-text':'unpaid-text')+'">'+(fullyPaid?'مسدد':'غير مسدد')+'</span></td></tr>';
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(name)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td class="status-cell"><span class="status-dot '+(fullyPaid?'paid':'unpaid')+'"></span><span class="status-name '+(fullyPaid?'paid-text':'unpaid-text')+'">'+(fullyPaid?'مسدد بالكامل':'متبقي '+ar(Math.max(0,balance))+' ج.م')+'</span></td></tr>';
  }).join('');
  const residentIds=new Set(residents.map(r=>r.id)),residentUnits=new Set(residents.map(r=>String(r.unit)));
  const standaloneOther=otherIncome.filter(x=>!((x.residentId&&residentIds.has(x.residentId))||(!x.residentId&&x.unit&&residentUnits.has(String(x.unit)))));
@@ -680,7 +679,7 @@ function renderAccounting(){
  const m=$('accMonth')?.value||currentMonth(), t=totals(m);
  if($('accDue')){let due=0,paid=0;db.residents.filter(r=>r.active!==false).forEach(r=>{due+=residentTotalDue(r,m);paid+=paidFor(r,m)});$('accDue').innerHTML=money(due);$('accCollected').innerHTML=money(paid);$('accExpenses').innerHTML=money(-Math.abs(t.exp));$('accCash').innerHTML=money(t.close);$('accBookCash').value=t.close;}
  if($('accResident'))$('accResident').innerHTML=db.residents.filter(r=>r.active!==false).map(r=>'<option value="'+r.id+'">'+escapeHtml(r.name||'بدون اسم')+' — وحدة '+escapeHtml(r.unit)+'</option>').join('');
- const rows=db.residents.filter(r=>r.active!==false).map(r=>{const subscription=residentFee(r,m),extra=residentExtraDue(r,m),due=subscription+extra,paid=paidFor(r,m),rem=due-paid;return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td>'+money(rem)+'</td></tr>'}).join('');
+ const rows=db.residents.filter(r=>r.active!==false).map(r=>{const subscription=residentFee(r,m),extra=residentExtraDue(r,m),paid=paidFor(r,m),rem=residentBalanceThrough(r,m);return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(r.name||'بدون اسم')+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td>'+money(rem)+'</td></tr>'}).join('');
  if($('accArrearsBody'))$('accArrearsBody').innerHTML=rows||'<tr><td colspan="6">لا يوجد سكان.</td></tr>';
  const years=[...new Set(months(36).map(x=>x.slice(0,4)))];if($('accYear'))$('accYear').innerHTML=years.map(y=>'<option>'+y+'</option>').join('');
 }
@@ -1006,7 +1005,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=26').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=27').catch(()=>{})}
 })();
 </script>
 </body>
