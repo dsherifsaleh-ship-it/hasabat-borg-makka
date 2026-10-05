@@ -709,18 +709,29 @@ function openResidentOpening(){
  $('saveRo').onclick=()=>{const mm=$('roMonth').value,amt=Number($('roAmount').value||0);if(!mm)return alert('اختر الشهر');r.openingBalances=r.openingBalances||{};r.openingBalances[mm]=amt;save();closeModal();renderAll();showAccResident();}; $('cancelRo').onclick=closeModal;openModal();
 }
 function showAccResident(){
- const r=db.residents.find(x=>x.id===$('accResident').value);
- if(!r)return;
- const start=$('accResidentFrom')?.value||firstOperationMonth()+'-01';
- const end=$('accResidentTo')?.value||today();
+ const r=db.residents.find(x=>x.id===$('accResident').value);if(!r)return;
+ const start=$('accResidentFrom')?.value||firstOperationMonth()+'-01',end=$('accResidentTo')?.value||today();
  if(start>end)return alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
  const fromM=start.slice(0,7),toM=end.slice(0,7);
- const ms=monthRangeFrom(fromM,toM);
- let due=0,paid=0;
- const opening=residentOpeningAt(r,fromM);
- const rows=ms.map(mm=>{const subscription=residentFee(r,mm),extra=residentExtraDue(r,mm),d=subscription+extra,p=paidFor(r,mm);due+=d;paid+=p;const bal=opening+due-paid;return '<tr><td>'+fmtMonth(mm)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(p)+'</td><td>'+money(bal)+'</td></tr>'}).join('');
- const finalBal=opening+due-paid;
- $('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الفترة: <b>'+start+'</b> إلى <b>'+end+'</b><br>الرصيد الافتتاحي: '+money(opening)+' — المستحق: '+money(due)+' — المحصل: '+money(paid)+' — الرصيد: '+money(finalBal)+'</div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الاشتراك</th><th>المستحق الإضافي</th><th>المحصل</th><th>الرصيد</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+ const [fy,fm]=fromM.split('-').map(Number),pd=new Date(fy,fm-2,1),prevM=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
+ const opening=residentBalanceThrough(r,prevM);
+ let events=[];
+ monthRangeFrom(fromM,toM).forEach(mm=>{
+   const sub=residentFee(r,mm);
+   if(sub)events.push({date:mm+'-01',no:'—',label:'اشتراك '+fmtMonth(mm),debit:sub,credit:0,txId:''});
+   (r.extraDues||[]).filter(d=>d.month===mm&&!d.voided).forEach(d=>events.push({date:d.date||mm+'-01',no:d.assessmentId?'م-'+String(d.assessmentId).slice(-6):'—',label:d.label||'مستحق إضافي',debit:Number(d.amount||0),credit:0,txId:d.assessmentId?'tx-'+d.assessmentId:''}));
+ });
+ db.tx.filter(x=>!x.voided&&x.type==='income'&&x.date>=start&&x.date<=end&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).forEach(x=>events.push({date:x.date,no:x.voucherNo||('ع-'+String(x.id).slice(-6)),label:x.label||x.note||'تحصيل',debit:0,credit:Number(x.amount||0),txId:x.id}));
+ events.sort((a,b)=>a.date.localeCompare(b.date)||(a.credit-b.credit));
+ let bal=opening,due=0,paid=0;
+ const rows=events.map(e=>{due+=e.debit;paid+=e.credit;bal+=e.debit-e.credit;const no=e.txId?'<button class="linkbtn acc-op" data-id="'+escapeAttr(e.txId)+'">'+escapeHtml(e.no)+'</button>':escapeHtml(e.no);return '<tr><td>'+escapeHtml(e.date)+'</td><td>'+no+'</td><td>'+escapeHtml(e.label)+'</td><td>'+money(e.debit)+'</td><td>'+money(e.credit)+'</td><td>'+money(bal)+'</td></tr>'}).join('');
+ $('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الفترة: <b>'+start+'</b> إلى <b>'+end+'</b><br>الرصيد قبل الفترة: '+money(opening)+' — المستحق خلال الفترة: '+money(due)+' — المحصل: '+money(paid)+' — الرصيد: '+money(bal)+'<br><small>اضغط على رقم العملية لعرضها وتعديلها أو حذفها.</small></div><div style="overflow:auto"><table><thead><tr><th>التاريخ</th><th>رقم العملية</th><th>البيان</th><th>مستحق</th><th>مسدد</th><th>الرصيد</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6">لا توجد حركات في الفترة.</td></tr>')+'</tbody></table></div>';
+ document.querySelectorAll('.acc-op').forEach(b=>b.onclick=()=>openAccStatementOperation(b.dataset.id));
+}
+function openAccStatementOperation(txId){
+ const tx=db.tx.find(x=>x.id===txId);if(!tx)return alert('لم يتم العثور على العملية.');
+ if(tx.type==='assessment')openDistributeDue(String(tx.id).replace(/^tx-/,''));
+ else openTx(tx.type,tx.id);
 }
 
 function showAnnual(){const y=$('accYear').value, ms=months(36).filter(x=>x.startsWith(y)).reverse();let inc=0,exp=0;const rows=ms.map(m=>{const t=totals(m);inc+=t.inc;exp+=t.exp;return '<tr><td>'+fmtMonth(m)+'</td><td>'+money(t.open)+'</td><td class="green">'+money(t.inc)+'</td><td class="red">'+money(t.exp)+'</td><td>'+money(t.close)+'</td></tr>'}).join('');$('accAnnual').innerHTML='<div class="notice">إجمالي الإيرادات: <b class="green">'+money(inc)+'</b> — إجمالي المصروفات: <b class="red">'+money(exp)+'</b> — صافي الحركة: <b>'+money(inc-exp)+'</b></div><div style="overflow:auto"><table><thead><tr><th>الشهر</th><th>الافتتاحي</th><th>الإيرادات</th><th>المصروفات</th><th>الختامي</th></tr></thead><tbody>'+rows+'</tbody></table></div>'}
@@ -779,11 +790,12 @@ function openTx(type,id){
  '<label>المسمى</label><div class="row"><select id="fCat">'+cats.map(c=>'<option value="'+escapeAttr(c)+'">'+escapeHtml(c)+'</option>').join('')+'</select><button class="neutral" id="addCatBtn">＋ إضافة مسمى</button></div>'+
  '<label>المبلغ</label><input id="fAmount" type="number" min="0" step="0.01" inputmode="decimal" value="'+(old?old.amount:'')+'">'+
  '<label>البيان</label><input id="fNote" value="'+escapeAttr(old?.note||'')+'" placeholder="بيان اختياري">'+
- '<div class="row" style="margin-top:12px"><button class="primary" id="saveTxBtn">حفظ</button><button class="neutral" id="cancelBtn">إلغاء</button></div>';
+ '<div class="row" style="margin-top:12px"><button class="primary" id="saveTxBtn">حفظ</button>'+(old?'<button class="danger" id="deleteTxModalBtn">حذف العملية</button>':'')+'<button class="neutral" id="cancelBtn">إلغاء</button></div>';
  if(old)$('fCat').value=old.label;
  $('addCatBtn').onclick=()=>{const name=prompt('اكتب اسم المسمى الجديد:');if(!name)return;const n=name.trim();if(!n)return; if(!db.categories[k].includes(n)){db.categories[k].push(n);save()} openTx(type,id)};
  $('saveTxBtn').onclick=()=>saveTx(type,id);
  $('cancelBtn').onclick=closeModal;
+ if($('deleteTxModalBtn'))$('deleteTxModalBtn').onclick=()=>{closeModal();deleteTx(id);};
  openModal();
 }
 function saveTx(type,id){
@@ -1024,7 +1036,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=28').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=30').catch(()=>{})}
 })();
 </script>
 </body>
