@@ -486,25 +486,43 @@ function monthRangeFrom(start,end){
  while(y<ey || (y===ey&&m<=em)){out.push(y+'-'+String(m).padStart(2,'0'));m++;if(m>12){m=1;y++;}if(out.length>240)break;}
  return out;
 }
-function residentOpeningAt(r,m){
+function residentOpeningEntryAt(r,m){
  const entries=Object.entries(r.openingBalances||{}).filter(([mm])=>mm<=m).sort((a,b)=>a[0].localeCompare(b[0]));
- if(!entries.length)return 0;
- return Number(entries[entries.length-1][1]||0);
+ return entries.length?{month:entries[entries.length-1][0],amount:Number(entries[entries.length-1][1]||0)}:null;
+}
+function residentOpeningAt(r,m){
+ const e=residentOpeningEntryAt(r,m);
+ return e?e.amount:0;
+}
+function residentDueBetween(r,fromM,toM){
+ if(!fromM||!toM||fromM>toM)return 0;
+ return monthRangeFrom(fromM,toM).reduce((sum,mm)=>sum+residentTotalDue(r,mm),0);
+}
+function residentPaidBetween(r,fromM,toM){
+ return db.tx.filter(x=>!x.voided&&x.type==='income'&&x.month>=fromM&&x.month<=toM&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).reduce((sum,x)=>sum+Number(x.amount||0),0);
 }
 function residentBalanceThrough(r,m){
- const start=firstOperationMonth();
- const opening=residentOpeningAt(r,start);
- return opening+residentDueThrough(r,m)-residentPaidThrough(r,m);
+ const openingEntry=residentOpeningEntryAt(r,m);
+ // الرصيد الافتتاحي هو نقطة بداية جديدة للحساب، لذلك لا نضيف عليه مستحقات أو تحصيلات أقدم منه.
+ const start=openingEntry?openingEntry.month:residentStartMonth(r);
+ const opening=openingEntry?openingEntry.amount:0;
+ return opening+residentDueBetween(r,start,m)-residentPaidBetween(r,start,m);
 }
 function residentPaidStatus(r,m){
- return residentBalanceThrough(r,m)<=0.005;
+ const currentDue=residentTotalDue(r,m);
+ const currentPaid=paidFor(r,m);
+ const cumulativeBalance=residentBalanceThrough(r,m);
+ // "مسدد بالكامل" فقط إذا سدد مستحق الشهر ولم تبق عليه أي مديونية سابقة.
+ return currentPaid+0.005>=currentDue && cumulativeBalance<=0.005;
 }
 function renderResidentBalances(m){
  const rows=db.residents.filter(r=>r.active!==false).map(r=>{
    const subscription=residentFee(r,m),extra=residentExtraDue(r,m),fee=subscription+extra,paid=paidFor(r,m);
-   const prevM=monthRangeFrom(firstOperationMonth(),m).slice(-2,-1)[0];
-   const previous=prevM?(residentOpeningAt(r,prevM)+residentDueThrough(r,prevM)-residentPaidThrough(r,prevM)):residentOpeningAt(r,m);
-   const current=previous+fee-paid;
+   const [yy,mmn]=m.split('-').map(Number);
+   const pd=new Date(yy,mmn-2,1);
+   const prevM=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
+   const previous=residentBalanceThrough(r,prevM);
+   const current=residentBalanceThrough(r,m);
    const safeName=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'—':String(r.name).trim();
    return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(safeName)+'</td><td>'+money(previous)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td>'+money(current)+'</td></tr>';
  }).join('');
@@ -645,9 +663,10 @@ function residentIncomeReport(m,subscriptionIncome,otherIncome){
  const residents=db.residents.slice().sort((a,b)=>String(a.unit||'').localeCompare(String(b.unit||''),undefined,{numeric:true}));
  let rows=residents.map(r=>{
    const subscription=residentFee(r,m),extra=residentExtraDue(r,m),paid=paidFor(r,m),balance=residentBalanceThrough(r,m);
-   const fullyPaid=balance<=0.005;
+   const currentDue=subscription+extra;
+   const fullyPaid=paid+0.005>=currentDue && balance<=0.005;
    const name=(r.name===undefined||r.name===null||String(r.name).trim()===''||String(r.name).trim().toLowerCase()==='undefined')?'بدون اسم':String(r.name).trim();
-   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(name)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td class="status-cell"><span class="status-dot '+(fullyPaid?'paid':'unpaid')+'"></span><span class="status-name '+(fullyPaid?'paid-text':'unpaid-text')+'">'+(fullyPaid?'مسدد بالكامل':'متبقي '+ar(Math.max(0,balance))+' ج.م')+'</span></td></tr>';
+   return '<tr><td>'+escapeHtml(r.unit)+'</td><td>'+escapeHtml(name)+'</td><td>'+money(subscription)+'</td><td>'+money(extra)+'</td><td>'+money(paid)+'</td><td class="status-cell"><span class="status-dot '+(fullyPaid?'paid':'unpaid')+'"></span><span class="status-name '+(fullyPaid?'paid-text':'unpaid-text')+'">'+(fullyPaid?'مسدد بالكامل':(paid+0.005<currentDue?'غير مسدد — الرصيد '+ar(Math.max(0,balance))+' ج.م':'مديونية سابقة '+ar(Math.max(0,balance))+' ج.م'))+'</span></td></tr>';
  }).join('');
  const residentIds=new Set(residents.map(r=>r.id)),residentUnits=new Set(residents.map(r=>String(r.unit)));
  const standaloneOther=otherIncome.filter(x=>!((x.residentId&&residentIds.has(x.residentId))||(!x.residentId&&x.unit&&residentUnits.has(String(x.unit)))));
@@ -1005,7 +1024,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=27').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=28').catch(()=>{})}
 })();
 </script>
 </body>
