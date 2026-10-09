@@ -181,6 +181,31 @@ section:not(#reports),main>div:not(#reports){display:none!important}
  .monthly-report thead{display:table-header-group}
  .monthly-report tr{break-inside:avoid;page-break-inside:avoid}
 }
+<style id="print-columns-v33">
+/* v33: keep both tables on landscape A4, with narrower name/amount columns. */
+@media print{
+ @page{size:A4 landscape;margin:5mm}
+ html,body{width:auto!important;height:auto!important;overflow:visible!important}
+ .monthly-report,#report .monthly-report{width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:2mm!important;box-sizing:border-box!important}
+ .monthly-report .report-columns{display:grid!important;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr)!important;gap:3mm!important;direction:ltr!important;align-items:start!important}
+ .monthly-report .report-block{min-width:0!important;width:auto!important;overflow:visible!important;break-inside:auto!important}
+ .monthly-report table.print-table{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
+ .monthly-report table.print-table th,.monthly-report table.print-table td{font-size:7.5px!important;font-weight:900!important;line-height:1.15!important;padding:1mm .6mm!important;height:auto!important;white-space:normal!important;overflow-wrap:anywhere!important;border:1px solid #334b5d!important}
+ .monthly-report .income-table th:nth-child(1){width:8%!important}
+ .monthly-report .income-table th:nth-child(2){width:19%!important}
+ .monthly-report .income-table th:nth-child(3){width:15%!important}
+ .monthly-report .income-table th:nth-child(4){width:18%!important}
+ .monthly-report .income-table th:nth-child(5){width:17%!important}
+ .monthly-report .income-table th:nth-child(6){width:23%!important}
+ .monthly-report .expenses table.print-table th:nth-child(1){width:21%!important}
+ .monthly-report .expenses table.print-table th:nth-child(2){width:59%!important}
+ .monthly-report .expenses table.print-table th:nth-child(3){width:20%!important}
+ .monthly-report .status-cell{white-space:normal!important}
+ .monthly-report .income-table .status-name{font-size:7.5px!important}
+ .monthly-report .report-block h3{font-size:10px!important;padding:1.5mm!important}
+ .monthly-report .report-head{margin-bottom:2mm!important}
+ .monthly-report tr{break-inside:avoid!important}
+}
 </style>
 </head>
 <body>
@@ -712,6 +737,31 @@ function printReportPage(){
  .monthly-report thead{display:table-header-group}
  .monthly-report tr{break-inside:avoid;page-break-inside:avoid}
 }
+
+/* v33: keep both tables on landscape A4, with narrower name/amount columns. */
+@media print{
+ @page{size:A4 landscape;margin:5mm}
+ html,body{width:auto!important;height:auto!important;overflow:visible!important}
+ .monthly-report,#report .monthly-report{width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:2mm!important;box-sizing:border-box!important}
+ .monthly-report .report-columns{display:grid!important;grid-template-columns:minmax(0,0.85fr) minmax(0,1.15fr)!important;gap:3mm!important;direction:ltr!important;align-items:start!important}
+ .monthly-report .report-block{min-width:0!important;width:auto!important;overflow:visible!important;break-inside:auto!important}
+ .monthly-report table.print-table{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
+ .monthly-report table.print-table th,.monthly-report table.print-table td{font-size:7.5px!important;font-weight:900!important;line-height:1.15!important;padding:1mm .6mm!important;height:auto!important;white-space:normal!important;overflow-wrap:anywhere!important;border:1px solid #334b5d!important}
+ .monthly-report .income-table th:nth-child(1){width:8%!important}
+ .monthly-report .income-table th:nth-child(2){width:19%!important}
+ .monthly-report .income-table th:nth-child(3){width:15%!important}
+ .monthly-report .income-table th:nth-child(4){width:18%!important}
+ .monthly-report .income-table th:nth-child(5){width:17%!important}
+ .monthly-report .income-table th:nth-child(6){width:23%!important}
+ .monthly-report .expenses table.print-table th:nth-child(1){width:21%!important}
+ .monthly-report .expenses table.print-table th:nth-child(2){width:59%!important}
+ .monthly-report .expenses table.print-table th:nth-child(3){width:20%!important}
+ .monthly-report .status-cell{white-space:normal!important}
+ .monthly-report .income-table .status-name{font-size:7.5px!important}
+ .monthly-report .report-block h3{font-size:10px!important;padding:1.5mm!important}
+ .monthly-report .report-head{margin-bottom:2mm!important}
+ .monthly-report tr{break-inside:avoid!important}
+}
  </style></head><body>${reportHtml}</body></html>`);
  w.document.close();
  setTimeout(()=>{w.focus();w.print();},350);
@@ -1116,7 +1166,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=32').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=33').catch(()=>{})}
 })();
 </script>
 </body>
