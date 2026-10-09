@@ -122,6 +122,45 @@ section:not(#reports),main>div:not(#reports){display:none!important}
 @media(max-width:480px){.operation-cards{grid-template-columns:1fr 1fr}.operation-card{padding:20px 8px}}
 .operation-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.operation-card{border:0;border-radius:18px;padding:22px 12px;font-size:17px;font-weight:900}.income-op{background:#e7f7ee;color:var(--green)}.expense-op{background:#fff0f0;color:var(--red)}.op-icon{display:block;font-size:30px;margin-bottom:7px}.accounting-mini{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.voided{opacity:.55;text-decoration:line-through}@media(min-width:700px){.accounting-mini{grid-template-columns:repeat(4,1fr)}}
 </style>
+
+<style id="report-mobile-fit-v31">
+/* Full-width readable mobile report: no fixed A4 canvas outside print. */
+@media screen and (max-width: 760px){
+ #report{width:100%!important;max-width:100%!important;overflow:visible!important}
+ #report .monthly-report{width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;padding:7px 5px!important;font-size:9px!important}
+ #report .report-top{grid-template-columns:1.15fr 1fr!important;gap:5px!important;direction:rtl!important}
+ #report .report-center{grid-column:1/-1;grid-row:1;text-align:center!important}
+ #report .report-summary{grid-column:1;grid-row:2}
+ #report .report-org{grid-column:2;grid-row:2}
+ #report .report-title{font-size:18px!important}
+ #report .report-subtitle{font-size:11px!important}
+ #report .report-month{font-size:11px!important;padding:4px 12px!important}
+ #report .report-org,.monthly-report .report-org .org-name{font-size:11px!important}
+ #report .report-org .report-date{margin-top:5px!important;font-size:9px!important}
+ #report .report-summary .sum-row{min-height:25px!important}
+ #report .report-summary .sum-label,#report .report-summary .sum-value{font-size:10px!important;padding:3px!important}
+ #report .report-columns{display:block!important}
+ #report .report-block{width:100%!important;margin:8px 0!important}
+ #report table.print-table{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
+ #report table.print-table th,#report table.print-table td{font-size:9px!important;line-height:1.35!important;font-weight:900!important;padding:5px 2px!important;height:auto!important;border:1.5px solid #334b5d!important;overflow-wrap:anywhere!important;white-space:normal!important}
+ #report .income-table th:nth-child(1){width:9%!important}
+ #report .income-table th:nth-child(2){width:23%!important}
+ #report .income-table th:nth-child(3){width:15%!important}
+ #report .income-table th:nth-child(4){width:16%!important}
+ #report .income-table th:nth-child(5){width:17%!important}
+ #report .income-table th:nth-child(6){width:20%!important}
+ #report .status-cell{white-space:normal!important}
+ #report .status-name{white-space:normal!important;font-size:9px!important}
+ #report .report-block h3{font-size:12px!important}
+}
+#report .monthly-report table.print-table th,#report .monthly-report table.print-table td{
+ border:1.5px solid #40576a!important;font-weight:800!important;overflow-wrap:anywhere!important;
+}
+#report .monthly-report .deficit-word{color:#d92323!important;font-weight:900!important;margin-inline-start:4px}
+@media print{
+ .monthly-report .deficit-word{color:#d92323!important;font-weight:900!important}
+}
+</style>
 </head>
 <body>
 <header>
@@ -649,7 +688,7 @@ function renderReport(){
  '<div class="sum-row"><div class="sum-label">الرصيد السابق</div><div class="sum-value '+valClass(t.open)+'">'+money(t.open)+'</div></div>'+
  '<div class="sum-row"><div class="sum-label">إجمالي الإيرادات</div><div class="sum-value '+valClass(t.inc)+'">'+money(t.inc)+'</div></div>'+
  '<div class="sum-row"><div class="sum-label">إجمالي المصروفات</div><div class="sum-value '+valClass(-Math.abs(t.exp))+'">'+money(t.exp)+'</div></div>'+
- '<div class="sum-row"><div class="sum-label">الرصيد الحالي</div><div class="sum-value '+valClass(t.close)+'">'+money(t.close)+'</div></div>'+
+ '<div class="sum-row"><div class="sum-label">الرصيد الحالي</div><div class="sum-value '+valClass(t.close)+'">'+money(t.close)+(t.close<0?' <strong class="deficit-word">عجز</strong>':'')+'</div></div>'+
  '</div>'+ 
  '<div class="report-center"><div class="report-title">حسابات برج مكة</div><div class="report-subtitle">تقرير الحركة المالية الشهري</div><div class="report-month">'+fmtMonth(m)+'</div></div>'+ 
  '<div class="report-org"><div class="org-name">اتحاد الشاغلين<br>برج مكة</div><div class="report-date">تاريخ التقرير: '+today()+'</div></div>'+ 
@@ -1036,7 +1075,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=30').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=31').catch(()=>{})}
 })();
 </script>
 </body>
