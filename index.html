@@ -764,7 +764,27 @@ function printReportPage(){
 }
  </style></head><body>${reportHtml}</body></html>`);
  w.document.close();
- setTimeout(()=>{w.focus();w.print();},350);
+ // Fit the entire report to one landscape A4 sheet before opening the print dialog.
+ setTimeout(()=>{
+   try{
+     const doc=w.document, page=doc.querySelector('.monthly-report');
+     if(page){
+       const style=doc.createElement('style');
+       style.textContent=`@page{size:A4 landscape;margin:0}html,body{margin:0!important;width:297mm!important;height:210mm!important;overflow:hidden!important}.monthly-report{position:relative!important;box-sizing:border-box!important;width:297mm!important;height:210mm!important;min-height:0!important;max-height:none!important;overflow:hidden!important;padding:4mm!important;break-inside:avoid!important;page-break-inside:avoid!important}.report-columns{display:grid!important;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)!important;gap:2mm!important;direction:ltr!important}.report-block{min-width:0!important;overflow:visible!important}.print-table{table-layout:fixed!important;width:100%!important}.print-table th,.print-table td{font-weight:900!important;border:1px solid #34495a!important;overflow-wrap:anywhere!important;white-space:normal!important}.income-table th:nth-child(2){width:19%!important}.expenses .print-table th:nth-child(3){width:20%!important}`;
+       doc.head.appendChild(style);
+       // Transform content as a whole, preserving all rows and columns and their borders.
+       const wrap=doc.createElement('div');wrap.style.cssText='position:absolute;left:4mm;top:4mm;width:289mm;transform-origin:top left;';
+       while(page.firstChild)wrap.appendChild(page.firstChild);
+       page.appendChild(wrap);
+       const availableW=page.clientWidth-30,availableH=page.clientHeight-30;
+       const contentW=Math.max(wrap.scrollWidth,wrap.getBoundingClientRect().width);
+       const contentH=wrap.scrollHeight;
+       const factor=Math.min(1,availableW/contentW,availableH/contentH);
+       wrap.style.transform='scale('+Math.max(.1,factor*0.985)+')';
+     }
+   }catch(err){console.error('Print fit',err)}
+   w.focus();w.print();
+ },550);
 }
 function renderReport(){
  const m=$('reportMonth').value||currentMonth(),t=totals(m);
@@ -1166,7 +1186,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=33').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=34').catch(()=>{})}
 })();
 </script>
 </body>
