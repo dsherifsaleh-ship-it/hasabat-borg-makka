@@ -718,42 +718,56 @@ function renderGate(){
 function printReportPage(){
  const report=$('report');if(!report||!report.innerHTML.trim())return;
  const w=window.open('about:blank','_blank');if(!w){alert('يرجى السماح بفتح نافذة الطباعة.');return;}
- const css=[...document.querySelectorAll('style')].map(x=>x.outerHTML).join('');
- const extra=`<style>
- @page{size:297mm 210mm;margin:0}
- html,body{width:297mm!important;height:210mm!important;margin:0!important;padding:0!important;overflow:hidden!important}
- body{background:white!important}
- .monthly-report{width:297mm!important;height:210mm!important;margin:0!important;padding:0!important;position:relative!important;overflow:hidden!important;box-sizing:border-box!important}
- .print-fit-content{position:absolute!important;left:0!important;top:0!important;width:285mm!important;box-sizing:border-box!important;padding:2mm!important;transform-origin:top left!important}
- .print-fit-content .report-columns{display:grid!important;grid-template-columns:minmax(0,42fr) minmax(0,58fr)!important;gap:2mm!important;direction:ltr!important;align-items:start!important}
- .print-fit-content .report-block{width:auto!important;min-width:0!important;margin:0!important}
- .print-fit-content table.print-table{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important}
- .print-fit-content table.print-table th,.print-fit-content table.print-table td{font-size:8px!important;line-height:1.1!important;padding:.6mm .4mm!important;border:1px solid #455666!important;white-space:normal!important;overflow-wrap:anywhere!important;font-weight:900!important}
- .print-fit-content .income-table th:nth-child(1){width:8%!important}
- .print-fit-content .income-table th:nth-child(2){width:19%!important}
- .print-fit-content .income-table th:nth-child(3){width:14%!important}
- .print-fit-content .income-table th:nth-child(4){width:17%!important}
- .print-fit-content .income-table th:nth-child(5){width:17%!important}
- .print-fit-content .income-table th:nth-child(6){width:25%!important}
- .print-fit-content .status-cell,.print-fit-content .status-name{white-space:normal!important;font-size:7px!important}
- .print-fit-content .report-head{margin-bottom:2mm!important}
- .print-fit-content .report-block h3{padding:1mm!important;font-size:10px!important}
+ // صفحة طباعة مستقلة: لا تنقل أنماط شاشة الهاتف أو التحجيم القديم.
+ const css=`<style>
+ @page{size:A4 landscape;margin:0}
+ *{box-sizing:border-box}
+ html,body{width:297mm;height:210mm;margin:0;padding:0;overflow:hidden;background:white;color:#173b5d}
+ body{font-family:Arial,Tahoma,sans-serif;direction:rtl}
+ .monthly-report{position:relative;width:297mm;height:210mm;overflow:hidden;border:0;margin:0;padding:0}
+ .print-content{position:absolute;top:3mm;left:4mm;width:289mm;transform-origin:top left}
+ .report-head{margin:0 0 2mm;padding:0}
+ .report-top{display:grid;grid-template-columns:27% 46% 27%;gap:0;align-items:start;direction:ltr}
+ .report-summary{border:1px solid #8ba6b9;direction:rtl}
+ .sum-row{display:grid;grid-template-columns:48% 52%;border-bottom:1px solid #b4c5d1;min-height:6mm;align-items:center}
+ .sum-row:last-child{border-bottom:0;background:#e3eef6}
+ .sum-label,.sum-value{padding:.7mm 1.5mm;font-size:10px;font-weight:900}
+ .sum-value{text-align:center}
+ .positive{color:#087f3f}.negative,.deficit-word{color:#c22}
+ .report-center{text-align:center;direction:rtl}
+ .report-title{font-size:21px;font-weight:900;margin:0}
+ .report-subtitle{font-size:12px;font-weight:900;margin:1mm 0}
+ .report-month{display:inline-block;background:#e3eff9;padding:1mm 5mm;font-size:12px;font-weight:900}
+ .report-org{text-align:right;direction:rtl;font-size:11px;font-weight:900}
+ .report-org .org-name{font-size:13px}.report-date{font-size:9px;margin-top:3mm}
+ .report-columns{display:grid;grid-template-columns:minmax(0,41fr) minmax(0,59fr);gap:2mm;direction:ltr;align-items:start;width:100%}
+ .report-block{direction:rtl;display:block;min-width:0;width:100%;margin:0;padding:0}
+ .report-block h3{font-size:11px;font-weight:900;text-align:center;margin:0;padding:1mm;border:1px solid #6e899d}
+ .expenses h3{background:#f8dddd;color:#872020}.income h3{background:#e1f3e6;color:#116333}
+ table.print-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:0}
+ table.print-table th,table.print-table td{border:1px solid #506b7e;padding:.7mm .5mm;font-size:9px;line-height:1.15;font-weight:800;vertical-align:middle;white-space:normal;overflow-wrap:anywhere;word-break:normal;text-align:right;height:auto}
+ table.print-table th{background:#edf3f7;font-weight:900}
+ .income-table th{background:#e7f5ec!important}
+ .income-table th:nth-child(1){width:8%}.income-table th:nth-child(2){width:20%}.income-table th:nth-child(3){width:15%}.income-table th:nth-child(4){width:17%}.income-table th:nth-child(5){width:17%}.income-table th:nth-child(6){width:23%}
+ .expenses table.print-table th:nth-child(1){width:26%}.expenses table.print-table th:nth-child(2){width:55%}.expenses table.print-table th:nth-child(3){width:19%}
+ .status-cell,.status-name{white-space:normal!important;font-size:8px!important;font-weight:900!important}
+ .status-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#198b55;margin-left:2px}
+ .status-dot.unpaid{background:#c22}.paid-text{color:#087f3f}.unpaid-text{color:#c22}
+ .total-row td{font-weight:900!important;background:#eaf3ee}
+ thead{display:table-header-group}tr{break-inside:avoid}
  </style>`;
- w.document.open();w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">'+css+extra+'</head><body>'+report.innerHTML+'</body></html>');w.document.close();
- const run=()=>{
+ w.document.open();w.document.write('<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">'+css+'</head><body><div class="monthly-report"><div class="print-content">'+report.querySelector('.monthly-report').innerHTML+'</div></div></body></html>');w.document.close();
+ const print=()=>{
+  const content=w.document.querySelector('.print-content');
   const page=w.document.querySelector('.monthly-report');
-  if(!page)return;
-  const fit=w.document.createElement('div');fit.className='print-fit-content';
-  while(page.firstChild)fit.appendChild(page.firstChild);
-  page.appendChild(fit);
-  const availableW=page.clientWidth-12,availableH=page.clientHeight-12;
-  const naturalW=Math.max(fit.scrollWidth,fit.getBoundingClientRect().width);
-  const naturalH=fit.scrollHeight;
-  const scale=Math.min(.98,availableW/naturalW,availableH/naturalH);
-  fit.style.transform='scale('+Math.max(.05,scale*.96)+')';
-  w.focus();setTimeout(()=>w.print(),250);
+  // نحسب الارتفاع الفعلي دون تحويلات متراكمة؛ ونصغّر فقط عند الضرورة.
+  const maxH=page.clientHeight-24,maxW=page.clientWidth-24;
+  const h=content.scrollHeight,ww=content.scrollWidth;
+  const scale=Math.min(1,maxH/Math.max(1,h),maxW/Math.max(1,ww));
+  content.style.transform='scale('+Math.max(.1,scale*.985)+')';
+  w.focus();w.print();
  };
- setTimeout(run,600);
+ setTimeout(print,450);
 }
 function renderReport(){
  const m=$('reportMonth').value||currentMonth(),t=totals(m);
@@ -1155,7 +1169,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=36').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=37').catch(()=>{})}
 })();
 </script>
 </body>
