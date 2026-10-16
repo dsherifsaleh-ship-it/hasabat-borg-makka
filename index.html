@@ -847,20 +847,39 @@ function showAccResident(){
  if(start>end)return alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
  const fromM=start.slice(0,7),toM=end.slice(0,7);
  const [fy,fm]=fromM.split('-').map(Number),pd=new Date(fy,fm-2,1),prevM=pd.getFullYear()+'-'+String(pd.getMonth()+1).padStart(2,'0');
- const opening=residentBalanceThrough(r,prevM);
+ const matches=x=>!x.voided&&x.type==='income'&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit));
+ // Opening is the exact balance immediately before the chosen date, including earlier movements in that month.
+ let opening=residentBalanceThrough(r,prevM);
+ const openingThisMonth=residentOpeningEntryAt(r,fromM);
+ if(openingThisMonth&&openingThisMonth.month===fromM)opening=openingThisMonth.amount;
+ const feeStart=residentStartMonth(r);
+ if(fromM>=feeStart&&start>fromM+'-01')opening+=residentTotalDue(r,fromM);
+ opening-=db.tx.filter(x=>matches(x)&&x.date>=fromM+'-01'&&x.date<start).reduce((sum,x)=>sum+Number(x.amount||0),0);
  let events=[];
  monthRangeFrom(fromM,toM).forEach(mm=>{
-   const sub=residentFee(r,mm);
-   if(sub)events.push({date:mm+'-01',no:'—',label:'اشتراك '+fmtMonth(mm),debit:sub,credit:0,txId:''});
-   (r.extraDues||[]).filter(d=>d.month===mm&&!d.voided).forEach(d=>events.push({date:d.date||mm+'-01',no:d.assessmentId?'م-'+String(d.assessmentId).slice(-6):'—',label:d.label||'مستحق إضافي',debit:Number(d.amount||0),credit:0,txId:d.assessmentId?'tx-'+d.assessmentId:''}));
+   const explicit=Object.prototype.hasOwnProperty.call(r.openingBalances||{},mm);
+   if(explicit&&mm!==fromM&&mm+'-01'>=start&&mm+'-01'<=end){
+     const before=residentBalanceThrough(r,(()=>{const [y,m]=mm.split('-').map(Number),d=new Date(y,m-2,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')})());
+     const diff=Number(r.openingBalances[mm]||0)-before;
+     if(Math.abs(diff)>0.005)events.push({date:mm+'-01',no:'—',label:'تسوية رصيد افتتاحي',debit:Math.max(0,diff),credit:Math.max(0,-diff),txId:''});
+   }
+   if(mm>=feeStart&&mm+'-01'>=start&&mm+'-01'<=end){
+     const sub=residentFee(r,mm);
+     if(sub)events.push({date:mm+'-01',no:'—',label:'اشتراك '+fmtMonth(mm),debit:sub,credit:0,txId:''});
+   }
+   (r.extraDues||[]).filter(d=>d.month===mm&&!d.voided).forEach(d=>{
+     const date=d.date||mm+'-01';if(date<start||date>end)return;
+     events.push({date,no:d.assessmentId?'م-'+String(d.assessmentId).slice(-6):'—',label:d.label||'مستحق إضافي',debit:Number(d.amount||0),credit:0,txId:d.assessmentId?'tx-'+d.assessmentId:''});
+   });
  });
- db.tx.filter(x=>!x.voided&&x.type==='income'&&x.date>=start&&x.date<=end&&((x.residentId&&x.residentId===r.id)||(!x.residentId&&x.unit===r.unit))).forEach(x=>events.push({date:x.date,no:x.voucherNo||('ع-'+String(x.id).slice(-6)),label:x.label||x.note||'تحصيل',debit:0,credit:Number(x.amount||0),txId:x.id}));
+ db.tx.filter(x=>matches(x)&&x.date>=start&&x.date<=end).forEach(x=>events.push({date:x.date,no:x.voucherNo||('ع-'+String(x.id).slice(-6)),label:x.label||x.note||'تحصيل',debit:0,credit:Number(x.amount||0),txId:x.id}));
  events.sort((a,b)=>a.date.localeCompare(b.date)||(a.credit-b.credit));
  let bal=opening,due=0,paid=0;
  const rows=events.map(e=>{due+=e.debit;paid+=e.credit;bal+=e.debit-e.credit;const no=e.txId?'<button class="linkbtn acc-op" data-id="'+escapeAttr(e.txId)+'">'+escapeHtml(e.no)+'</button>':escapeHtml(e.no);return '<tr><td>'+escapeHtml(e.date)+'</td><td>'+no+'</td><td>'+escapeHtml(e.label)+'</td><td>'+money(e.debit)+'</td><td>'+money(e.credit)+'</td><td>'+money(bal)+'</td></tr>'}).join('');
  $('accResidentStatement').innerHTML='<div class="notice"><b>'+escapeHtml(r.name||'بدون اسم')+'</b> — وحدة '+escapeHtml(r.unit)+'<br>الفترة: <b>'+start+'</b> إلى <b>'+end+'</b><br>الرصيد قبل الفترة: '+money(opening)+' — المستحق خلال الفترة: '+money(due)+' — المحصل: '+money(paid)+' — الرصيد: '+money(bal)+'<br><small>اضغط على رقم العملية لعرضها وتعديلها أو حذفها.</small></div><div style="overflow:auto"><table><thead><tr><th>التاريخ</th><th>رقم العملية</th><th>البيان</th><th>مستحق</th><th>مسدد</th><th>الرصيد</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6">لا توجد حركات في الفترة.</td></tr>')+'</tbody></table></div>';
  document.querySelectorAll('.acc-op').forEach(b=>b.onclick=()=>openAccStatementOperation(b.dataset.id));
 }
+
 function openAccStatementOperation(txId){
  const tx=db.tx.find(x=>x.id===txId);if(!tx)return alert('لم يتم العثور على العملية.');
  if(tx.type==='assessment')openDistributeDue(String(tx.id).replace(/^tx-/,''));
@@ -1169,7 +1188,7 @@ if($('accResidentTo'))$('accResidentTo').value=today();
 fillSelect('accMonth',currentMonth());
 renderAll();
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=38').catch(()=>{})}
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js?v=39').catch(()=>{})}
 })();
 </script>
 </body>
